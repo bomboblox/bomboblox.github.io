@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bomboblox</title>
+<link rel="icon" type="image/png" href="bomboblox.png">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+#welcome{display:flex;flex-wrap:wrap;align-items:center;gap:28px;background:#1e1e1e;border:3px solid #ff6a00;box-shadow:8px 8px 0 #000;padding:24px}
+#me-av{width:170px;height:272px;flex-shrink:0;background:#2a1608;border:3px solid #ff6a00;display:block}#me-av svg{width:100%;height:100%;padding:8%}
+#hi{font:64px Bangers,Impact,fantasy;letter-spacing:3px;color:#fff;text-shadow:4px 4px 0 #ff6a00;line-height:1.05;overflow-wrap:anywhere}
+#welcome .sub{font-size:14px;font-weight:700;color:#aaa;margin:10px 0 16px;line-height:1.5}#welcome .acts{display:flex;flex-wrap:wrap;gap:10px}
+#hero-row{display:flex;flex-wrap:wrap;gap:20px;align-items:stretch}
+#questbox{flex:1.2 1 320px;min-width:0;background:#ff6a00;padding:16px;display:flex;flex-direction:column;gap:10px;color:#111}
+#questbox h3{font:26px Bangers,Impact,fantasy;letter-spacing:2px;line-height:1.1;font-weight:normal;display:flex;align-items:baseline;justify-content:space-between;gap:8px}#questbox h3 small{font:900 12px Nunito,sans-serif;letter-spacing:0}
+.q{display:flex;align-items:center;gap:10px;background:#1a1a1a;color:#f1f1f1;padding:9px 10px;border-left:5px solid #111}.q.done{border-left-color:#2fd16f}.q.got{opacity:.55}
+.q .qi{font-size:20px;width:26px;text-align:center;flex-shrink:0}.q .qt{flex:1;min-width:0;font-size:13px;font-weight:900;line-height:1.3}
+.q .qr{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:900;color:#ffb066;white-space:nowrap}.q .qr img{width:16px;height:16px;object-fit:contain}
+.q .qs{width:78px;text-align:center;font-size:11px;font-weight:900;color:#888;flex-shrink:0}.q button.qs{height:30px;background:#2fd16f;border:none;color:#111;font:900 12px Nunito,sans-serif;cursor:pointer;animation:qp 1.6s infinite}.q.got .qs{color:#2fd16f}
+@keyframes qp{0%,100%{box-shadow:0 0 0 0 rgba(47,209,111,.7)}50%{box-shadow:0 0 0 5px rgba(47,209,111,0)}}
+#questbox .qfoot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:900}
+#questbox .qbal{display:inline-flex;align-items:center;gap:6px;background:#111;color:#fff;padding:5px 10px;border:0;font:900 13px Nunito,sans-serif;cursor:pointer}
+#reqbox{flex:1 1 280px;min-width:0}#reqbox .section-label{margin-bottom:8px}
+#guest{display:none;flex-direction:column;align-items:center;text-align:center;gap:18px;padding:50px 20px;background:#1e1e1e;border:3px solid #ff6a00;box-shadow:8px 8px 0 #000}
+#guest h1{font:72px Bangers,Impact,fantasy;letter-spacing:4px;color:#fff;text-shadow:5px 5px 0 #ff6a00;line-height:1;font-weight:normal}#guest p{font-size:16px;font-weight:700;color:#bbb;max-width:520px;line-height:1.5}
+#guest .acts{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}#guest .btn{height:54px;padding:0 30px;font:26px Bangers,Impact,fantasy;letter-spacing:2px}
+#home{display:none;flex-direction:column;gap:24px}
+@media(max-width:560px){#hi{font-size:44px}#guest h1{font-size:46px}#me-av{width:120px;height:192px}}
+</style>
+</head>
+<body>
+<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn" id="btn-login">Log In</a><a href="signup.html" class="auth-btn" id="btn-signup">Sign Up</a></div></div>
+<main>
+  <section id="guest">
+    <h1>BOMBOBLOX</h1>
+    <p>Make your noob, add your friends, chat with them and earn Bombopoints. Free to join!</p>
+    <div class="acts"><a href="signup.html" class="btn">SIGN UP</a><a href="login.html" class="btn outline">LOG IN</a></div>
+  </section>
+
+  <div id="home">
+    <section id="welcome">
+      <a id="me-av" href="shop.html" title="Change your look in the shop"></a>
+      <div>
+        <div id="hi">Wassup, ...!</div>
+        <p class="sub">Welcome back to Bomboblox. <span id="fcount"></span></p>
+        <div class="acts"><a class="btn" href="friends.html?tab=find">&#10133; Find Friends</a><a class="btn outline" id="myprof" href="#">My Profile</a><a class="btn outline" href="shop.html">&#128717;&#65039; Change Look</a></div>
+      </div>
+    </section>
+
+    <section id="hero-row">
+      <aside id="questbox" aria-label="Daily quests">
+        <h3>Daily Quests <small id="q-count"></small></h3>
+        <div id="q-list"></div>
+        <div class="qfoot" id="q-foot"></div>
+      </aside>
+      <aside id="reqbox" class="card">
+        <div class="section-label">Friend Requests</div>
+        <div id="req-list"><div class="empty">No requests right now.</div></div>
+      </aside>
+    </section>
+
+    <section>
+      <div class="section-label" style="margin-bottom:16px">My Friends <span id="fn"></span></div>
+      <div class="friend-grid" id="friends"><div class="empty">Loading...</div></div>
+    </section>
+  </div>
+</main>
+<footer>&copy; Bomboblox. A fan-made game platform, not affiliated with Roblox.</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="bb.js"></script>
+<script>
+  var $ = function(i) { return document.getElementById(i); };
+  var qUser = null;
+  function qLeft() { var m = Math.floor(bbMsToReset() / 60000); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
+  function qRow(id, st) {
+    var Q = QUESTS[id], right = st === 'got' ? '&#10003; Got it' : st === 'done' ? '<button class="qs" data-claim="' + id + '">CLAIM!</button>' : 'Not done yet';
+    return '<div class="q ' + (st === 'done' ? 'done' : st === 'got' ? 'got' : '') + '"><div class="qi">' + Q.i + '</div><div class="qt">' + esc(Q.t) + '</div><div class="qr">+' + Q.pts + ' ' + BB_COIN + '</div>' + (st === 'done' ? right : '<div class="qs">' + right + '</div>') + '</div>';
+  }
+  function renderQuests() {
+    var ids = bbQuestsToday(), day = bbDay(), W = db.collection('wallets').doc(qUser.uid);
+    Promise.all([W.collection('acts').where('day', '==', day).get(), W.collection('claims').where('day', '==', day).get()]).then(function(r) {
+      var acts = {}, claims = {}, got = 0;
+      r[0].forEach(function(d) { acts[d.data().q] = 1; }); r[1].forEach(function(d) { claims[d.data().q] = 1; });
+      $('q-list').innerHTML = ids.map(function(id) { var st = claims[id] ? 'got' : acts[id] ? 'done' : 'todo'; if (claims[id]) got++; return qRow(id, st); }).join('');
+      $('q-count').textContent = got + '/' + DAILY_QUESTS + ' done';
+      $('q-foot').innerHTML = '<button type="button" class="qbal" onclick="location.href=\'shop.html\'">' + BB_COIN + '<span class="pts-n">' + bbFmt(BB_PTS) + '</span> Bombopoints &middot; spend &rsaquo;</button><span id="q-reset">' + (got >= DAILY_QUESTS ? 'All done! New quests in ' : 'New quests in ') + qLeft() + '</span>';
+    }).catch(function(e) { $('q-list').innerHTML = '<div style="font-size:13px;font-weight:800">Could not load quests: ' + esc(e.message) + '</div>'; });
+  }
+  $('q-list').addEventListener('click', function(e) {
+    var b = e.target.closest('[data-claim]'); if (!b) return; b.disabled = true; b.textContent = '...';
+    bbClaim(b.dataset.claim).then(renderQuests).catch(function(err) { alert(err.message); renderQuests(); });
+  });
+  setInterval(function() { var r = $('q-reset'); if (r) r.textContent = r.textContent.replace(/in .*$/, 'in ' + qLeft()); if (bbMsToReset() < 1000 && qUser) renderQuests(); }, 30000);
+  $('req-list').addEventListener('click', bbReqClick);
+
+  auth.onAuthStateChanged(function(user) {
+    qUser = user;
+    if (!user) { $('guest').style.display = 'flex'; $('home').style.display = 'none'; return; }
+    $('guest').style.display = 'none'; $('home').style.display = 'flex';
+    bbNav(user);
+    var name = user.displayName || 'Noob';
+    $('hi').textContent = 'Wassup, ' + name + '!';
+    $('myprof').href = 'user.html?uid=' + encodeURIComponent(user.uid);
+    /* your avatar (everyone is a noob until they buy a look) */
+    $('me-av').innerHTML = bbSvg('noob');
+    db.collection('users').doc(user.uid).onSnapshot(function(d) { $('me-av').innerHTML = bbSvg(d.exists ? d.data().look : 'noob'); });
+    renderQuests();
+    window.addEventListener('bbpoints', function() { var b = document.querySelector('#q-foot .pts-n'); if (b) b.textContent = bbFmt(BB_PTS); });
+
+    /* friend requests, live */
+    db.collection('users').doc(user.uid).collection('friendReqs').orderBy('at', 'desc').limit(20).onSnapshot(function(q) {
+      $('req-list').innerHTML = q.docs.length ? q.docs.map(function(d) { return bbReqRow(d.id, d.data()); }).join('') : '<div class="empty">No requests right now.</div>';
+    }, function() {});
+    /* friends show up here as soon as you add each other */
+    db.collection('users').doc(user.uid).collection('friends').orderBy('at', 'desc').limit(100).onSnapshot(function(q) {
+      var n = q.docs.length;
+      $('fn').textContent = '(' + n + ')';
+      $('fcount').textContent = n ? 'You have ' + n + ' friend' + (n !== 1 ? 's' : '') + '.' : 'You have no friends yet. Go add some!';
+      $('friends').innerHTML = n ? q.docs.map(function(d) { return bbFriendTile(d.id, d.data()); }).join('') :
+        '<div class="empty" style="grid-column:1/-1">Nobody here yet. <a href="friends.html?tab=find" style="color:#ff6a00;font-weight:900">Find people to add &rarr;</a></div>';
+    }, function(e) { $('friends').innerHTML = '<div class="empty">Could not load friends: ' + esc(e.message) + '</div>'; });
+  });
+</script>
+</body>
+</html>

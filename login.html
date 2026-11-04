@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In - Bomboblox</title>
+<link rel="icon" type="image/png" href="bomboblox.png">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+main{align-items:center;justify-content:center;padding:40px 16px}
+.box{background:#1e1e1e;border:3px solid #ff6a00;box-shadow:8px 8px 0 #000;padding:36px 32px;width:100%;max-width:420px}
+h1{font:36px Bangers,Impact,fantasy;letter-spacing:2px;margin-bottom:24px;color:#fff;text-shadow:2px 2px 0 #ff6a00;font-weight:normal}
+.field{margin-bottom:16px}label{display:block;font:20px Bangers,Impact,fantasy;color:#ff6a00;letter-spacing:1px;margin-bottom:6px}
+.field .txt{width:100%}
+.go{width:100%;height:46px;background:#ff6a00;border:none;color:#fff;font:22px Bangers,Impact,fantasy;cursor:pointer;letter-spacing:2px;margin-top:8px}.go:hover{background:#e05a00}
+.msg{margin-top:12px;font-size:13px;color:#ff4444;min-height:18px;font-weight:700}.msg.success{color:#44ff88}
+.link{margin-top:16px;font-size:12px;color:#888;text-align:center}.link a{color:#ff6a00;font-weight:900}
+</style>
+</head>
+<body>
+<div id="topbar"><a href="index.html" id="logo"></a></div>
+<main>
+  <form class="box" id="f">
+    <h1>Log in to Bomboblox</h1>
+    <div class="field"><label>Email</label><input class="txt" type="email" id="email" placeholder="you@email.com" autocomplete="email"></div>
+    <div class="field"><label>Password</label><input class="txt" type="password" id="password" placeholder="Your password" autocomplete="current-password"></div>
+    <button class="go" type="submit">LET ME IN!</button>
+    <div class="msg" id="msg"></div>
+    <div class="link">No account yet? <a href="signup.html">Make one here</a></div>
+  </form>
+</main>
+<footer>&copy; Bomboblox. A fan-made game platform, not affiliated with Roblox.</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="bb.js"></script>
+<script>
+  document.getElementById('f').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var email = document.getElementById('email').value.trim(), password = document.getElementById('password').value, msg = document.getElementById('msg');
+    if (!email || !password) { msg.className = 'msg'; msg.textContent = 'Fill in all fields!'; return; }
+    msg.className = 'msg'; msg.textContent = 'Logging in...';
+    auth.signInWithEmailAndPassword(email, password).then(function() {
+      msg.className = 'msg success'; msg.textContent = 'Logged in! Taking you home...';
+      setTimeout(function() { location.href = 'index.html'; }, 600);
+    }).catch(function(err) {
+      msg.className = 'msg';
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') msg.textContent = 'Wrong email or password!';
+      else msg.textContent = 'Error: ' + err.message;
+    });
+  });
+</script>
+</body>
+</html>

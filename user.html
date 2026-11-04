@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile - Bomboblox</title>
+<link rel="icon" type="image/png" href="bomboblox.png">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+main{max-width:900px}
+.pbox{display:flex;flex-wrap:wrap;gap:28px;background:#1e1e1e;border:3px solid #ff6a00;box-shadow:8px 8px 0 #000;padding:24px}
+#p-av{width:190px;height:304px;flex-shrink:0;background:#2a1608;border:3px solid #ff6a00}#p-av svg{width:100%;height:100%;padding:8%}
+.pinfo{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.pinfo h2{font:44px Bangers,Impact,fantasy;letter-spacing:2px;color:#fff;text-shadow:3px 3px 0 #ff6a00;font-weight:normal;overflow-wrap:anywhere;line-height:1.1}
+.meta{font-size:12px;color:#888;font-weight:700}.bio{font-size:14px;color:#ccc;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap;border-top:2px solid #2a2a2a;padding-top:12px}
+.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto}
+#bioedit{display:none;flex-direction:column;gap:8px}
+</style>
+</head>
+<body>
+<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn" id="btn-login">Log In</a><a href="signup.html" class="auth-btn" id="btn-signup">Sign Up</a></div></div>
+<main>
+  <div id="wrap" class="empty">Loading...</div>
+  <section id="fsec" style="display:none">
+    <div class="section-label" style="margin-bottom:16px">Friends <span id="fn"></span></div>
+    <div class="friend-grid" id="friends"></div>
+  </section>
+</main>
+<footer>&copy; Bomboblox. A fan-made game platform, not affiliated with Roblox.</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="bb.js"></script>
+<script>
+  var $ = function(i) { return document.getElementById(i); };
+  var uid = new URLSearchParams(location.search).get('uid'), me = null, bioNow = '';
+  auth.onAuthStateChanged(function(u) {
+    if (!u) return location.href = 'login.html';
+    me = u; bbNav(u); load();
+  });
+  function load() {
+    if (!uid) { $('wrap').textContent = 'No user specified.'; return; }
+    db.collection('users').doc(uid).get().then(function(d) {
+      if (!d.exists) { $('wrap').textContent = 'User not found.'; return; }
+      var x = d.data(), mine = uid === me.uid; bioNow = x.bio || '';
+      $('wrap').className = ''; 
+      $('wrap').innerHTML = '<div class="pbox"><div id="p-av">' + bbSvg(x.look) + '</div><div class="pinfo"><h2>' + esc(x.username || 'Unknown') + '</h2>' +
+        '<div class="meta">Joined ' + bbDate(x.createdAt) + ' &middot; Look: ' + esc(bbLook(x.look).n) + '</div>' +
+        '<div class="bio" id="bio">' + (esc(bioNow) || '<span style="color:#666">No description yet.</span>') + '</div>' +
+        '<div id="bioedit"><textarea class="txt" id="bioin" maxlength="200"></textarea><div style="display:flex;gap:8px"><button class="btn" id="bio-save">Save</button><button class="btn outline" id="bio-cancel">Cancel</button></div></div>' +
+        '<div class="acts">' + (mine ? '<button class="btn" id="bio-edit">&#9998;&#65039; Edit description</button><a class="btn outline" href="shop.html">&#128717;&#65039; Change look</a>'
+          : bbFBtn(uid, x.username) + '<a class="btn outline" href="chat.html?uid=' + encodeURIComponent(uid) + '">&#128172; Chat</a>') + '</div></div></div>';
+      if (!mine) { bbFBtnFill($('wrap')); bbAct('visit'); }
+      $('wrap').onclick = function(e) { bbFBtnClick(e, loadFriends); };
+      if (mine) {
+        $('bio-edit').onclick = function() { $('bioin').value = bioNow; $('bioedit').style.display = 'flex'; };
+        $('bio-cancel').onclick = function() { $('bioedit').style.display = 'none'; };
+        $('bio-save').onclick = function() {
+          var t = $('bioin').value.trim().slice(0, 200);
+          db.collection('users').doc(uid).update({ bio: t }).then(function() { bbAct('bio'); load(); }).catch(function(err) { alert(err.message); });
+        };
+      }
+      loadFriends();
+    }).catch(function(e) { $('wrap').textContent = 'Error: ' + e.message; });
+  }
+  function loadFriends() {
+    db.collection('users').doc(uid).collection('friends').orderBy('at', 'desc').limit(60).get().then(function(q) {
+      $('fsec').style.display = 'block'; $('fn').textContent = '(' + q.docs.length + (q.docs.length === 60 ? '+' : '') + ')';
+      $('friends').innerHTML = q.docs.length ? q.docs.map(function(d) {
+        var x = d.data();
+        return '<div class="ftile">' + bbAvU(d.id, x.name, 100, 'user.html?uid=' + encodeURIComponent(d.id)) + '<a class="fn" href="user.html?uid=' + encodeURIComponent(d.id) + '">' + esc(x.name) + '</a></div>';
+      }).join('') : '<div class="empty" style="grid-column:1/-1">No friends yet.</div>';
+    }).catch(function() {});
+  }
+</script>
+</body>
+</html>

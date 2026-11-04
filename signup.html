@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up - Bomboblox</title>
+<link rel="icon" type="image/png" href="bomboblox.png">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+main{align-items:center;justify-content:center;padding:40px 16px}
+.box{background:#1e1e1e;border:3px solid #ff6a00;box-shadow:8px 8px 0 #000;padding:36px 32px;width:100%;max-width:460px}
+h1{font:38px Bangers,Impact,fantasy;letter-spacing:2px;color:#fff;text-shadow:2px 2px 0 #ff6a00;text-align:center;margin-bottom:6px;font-weight:normal}
+.tag{font-size:12px;color:#aaa;text-align:center;margin-bottom:22px}
+.field{margin-bottom:22px}.field label{display:block;font:22px Bangers,Impact,fantasy;color:#ff6a00;letter-spacing:1px;margin-bottom:8px;text-shadow:1px 1px 0 #000}
+.field .txt{width:100%;height:48px;font-size:15px}.field textarea.txt{height:90px}
+.hint{font-size:12px;color:#999;margin-top:8px}
+.row{display:flex;gap:12px}.row .go{flex:1}.row .back{flex:0 0 33%}
+.go{width:100%;height:48px;background:#ff6a00;border:none;color:#fff;font:22px Bangers,Impact,fantasy;cursor:pointer;letter-spacing:2px}.go:hover{background:#e05a00}.go.back{background:#333;color:#ccc}.go.back:hover{background:#444;color:#fff}.go:disabled{opacity:.6}
+.panel{display:none}.panel.active{display:block}
+.prev{display:flex;align-items:center;gap:14px;background:#161616;border:2px solid #2a2a2a;padding:10px 14px;margin-bottom:20px;font-size:12px;color:#ccc;line-height:1.6}.prev b{color:#fff}
+.msg{margin-top:14px;font-size:13px;color:#ff4444;min-height:20px;font-weight:700;text-align:center}.msg.success{color:#44ff88}
+.link{margin-top:18px;font-size:12px;color:#888;text-align:center}.link a{color:#ff6a00;font-weight:900}
+</style>
+</head>
+<body>
+<div id="topbar"><a href="index.html" id="logo"></a></div>
+<main>
+  <div class="box">
+    <h1>JOIN BOMBOBLOX</h1>
+    <p class="tag">Everybody starts as a noob. It's free!</p>
+    <div class="panel active" id="screen-1">
+      <div class="field">
+        <label for="username">PICK YOUR NAME:</label>
+        <input class="txt" type="text" id="username" maxlength="23" placeholder="e.g. BomboKing225" autocomplete="off">
+        <div class="hint" style="display:flex;justify-content:space-between"><span>This is the name your friends will see.</span><span id="char-counter">0/23</span></div>
+      </div>
+      <button class="go" id="next-1">CONTINUE &rarr;</button>
+    </div>
+    <div class="panel" id="screen-2">
+      <div class="field">
+        <label for="email">EMAIL:</label>
+        <input class="txt" type="email" id="email" placeholder="example@gmail.com" autocomplete="email">
+        <div class="hint">You use this to log in. Remember it!</div>
+      </div>
+      <div class="row"><button class="go back" id="back-2">&larr; BACK</button><button class="go" id="next-2">CONTINUE &rarr;</button></div>
+    </div>
+    <div class="panel" id="screen-3">
+      <div class="field">
+        <label for="password">CREATE A PASSWORD:</label>
+        <input class="txt" type="password" id="password" placeholder="Minimum 6 characters" autocomplete="new-password">
+        <div class="hint">At least 6 characters long.</div>
+      </div>
+      <div class="row"><button class="go back" id="back-3">&larr; BACK</button><button class="go" id="next-3">CONTINUE &rarr;</button></div>
+    </div>
+    <div class="panel" id="screen-4">
+      <div class="field">
+        <label for="bio">ABOUT ME:</label>
+        <textarea class="txt" id="bio" maxlength="200" placeholder="Tell everybody who you are (optional)"></textarea>
+      </div>
+      <div class="prev"><div id="prev-av" style="width:64px;height:100px;flex-shrink:0"></div><div>Name: <b id="summary-username"></b><br>Email: <b id="summary-email"></b><br>Avatar: <b>Noob</b> (buy new looks later)</div></div>
+      <div class="row"><button class="go back" id="back-4">&larr; BACK</button><button class="go" id="signup-btn">CREATE ACCOUNT!</button></div>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="link">Already have an account? <a href="login.html">Log in here</a></div>
+  </div>
+</main>
+<footer>&copy; Bomboblox. A fan-made game platform, not affiliated with Roblox.</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="bb.js"></script>
+<script>
+  var msg = document.getElementById('msg'), un = document.getElementById('username');
+  var okName = /^[a-zA-Z0-9æøåÆØÅ_ .\-]+$/;
+  function show(t, good) { msg.textContent = t; msg.className = good ? 'msg success' : 'msg'; }
+  function go(n) {
+    show('');
+    for (var i = 1; i <= 4; i++) document.getElementById('screen-' + i).classList.toggle('active', i === n);
+    if (n === 4) {
+      document.getElementById('summary-username').textContent = un.value.trim();
+      document.getElementById('summary-email').textContent = document.getElementById('email').value.trim();
+      document.getElementById('prev-av').innerHTML = '<div class="av has" style="width:64px;height:100px">' + bbSvg('noob') + '</div>';
+    }
+  }
+  un.addEventListener('input', function() {
+    document.getElementById('char-counter').textContent = un.value.length + '/23';
+    if (un.value && !okName.test(un.value)) show('Only letters, numbers, spaces and . - _ are allowed.'); else show('');
+  });
+  document.getElementById('next-1').onclick = function() {
+    var n = un.value.trim();
+    if (n.length < 3) return show('Your name must be at least 3 characters.');
+    if (!okName.test(n)) return show('Only letters, numbers, spaces and . - _ are allowed.');
+    if (n.toLowerCase().replace(/[^a-z0-9]/g, '').indexOf('bomboblox') > -1) return show('That name is reserved. Choose another.');
+    show('Checking name...');
+    /* usernames/{name in lowercase} exists = name is taken. Anyone may read one name, nobody may list them. */
+    db.collection('usernames').doc(n.toLowerCase()).get().then(function(d) {
+      if (d.exists) show('That name is already taken. Choose another.'); else go(2);
+    }).catch(function() { go(2); });
+  };
+  document.getElementById('next-2').onclick = function() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(document.getElementById('email').value.trim())) return show('Please enter a valid email address.');
+    go(3);
+  };
+  document.getElementById('next-3').onclick = function() {
+    if (document.getElementById('password').value.length < 6) return show('Password must be at least 6 characters long.');
+    go(4);
+  };
+  document.getElementById('back-2').onclick = function() { go(1); };
+  document.getElementById('back-3').onclick = function() { go(2); };
+  document.getElementById('back-4').onclick = function() { go(3); };
+
+  document.getElementById('signup-btn').onclick = function() {
+    var name = un.value.trim(), email = document.getElementById('email').value.trim(), pw = document.getElementById('password').value, bio = document.getElementById('bio').value.trim().slice(0, 200);
+    var btn = this; btn.disabled = true; show('Creating account...');
+    auth.createUserWithEmailAndPassword(email, pw).then(function(cred) {
+      var user = cred.user, b = db.batch();
+      b.set(db.collection('users').doc(user.uid), { username: name, usernameLower: name.toLowerCase(), bio: bio, look: 'noob', createdAt: new Date().toISOString() });
+      b.set(db.collection('usernames').doc(name.toLowerCase()), { uid: user.uid });
+      return b.commit().then(function() { return user.updateProfile({ displayName: name }); }).then(function() {
+        show('Welcome to Bomboblox! Redirecting...', true);
+        setTimeout(function() { location.href = 'index.html'; }, 900);
+      }, function() {
+        /* the name was taken at the last second: undo the account so they can try again */
+        return user.delete().catch(function() {}).then(function() { btn.disabled = false; go(1); show('That name was just taken. Choose another.'); });
+      });
+    }).catch(function(err) {
+      btn.disabled = false;
+      if (err.code === 'auth/email-already-in-use') show('This email is already in use by another account.');
+      else if (err.code === 'auth/weak-password') show('Password must be at least 6 characters.');
+      else show('Error: ' + err.message);
+    });
+  };
+</script>
+</body>
+</html>

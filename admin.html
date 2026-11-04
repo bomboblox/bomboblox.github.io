@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Bomboblox</title>
+<link rel="icon" type="image/png" href="bomboblox.png">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+main{max-width:760px}.card h3{font:24px Bangers,Impact,fantasy;letter-spacing:1px;color:#ff4444;font-weight:normal;margin-bottom:8px}.card p{font-size:13px;color:#aaa;line-height:1.5;margin-bottom:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px}.row .txt{flex:1 1 160px}.crow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid #2a2a2a;font-size:13px}
+</style>
+</head>
+<body>
+<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn" id="btn-login">Log In</a><a href="signup.html" class="auth-btn" id="btn-signup">Sign Up</a></div></div>
+<main id="m"><div class="empty">Checking...</div></main>
+<footer>&copy; Bomboblox. A fan-made game platform, not affiliated with Roblox.</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="bb.js"></script>
+<script>
+  var $ = function(i) { return document.getElementById(i); };
+  function say(id, t, ok) { var m = $(id); m.className = 'shop-msg ' + (ok ? 'ok' : 'bad'); m.textContent = t; }
+  function codes() {
+    db.collection('codes').get().then(function(q) {
+      var a = q.docs.map(function(d) { var x = d.data(); x.id = d.id; return x; }).sort(function(x, y) { return (y.createdAt || '') < (x.createdAt || '') ? -1 : 1; });
+      $('c-list').innerHTML = a.length ? a.map(function(c) { return '<div class="crow"><span><b style="letter-spacing:2px">' + esc(c.id) + '</b> &middot; ' + c.points + ' points</span><button class="btn red" data-del="' + esc(c.id) + '">Delete</button></div>'; }).join('') : '<div class="empty">No codes yet.</div>';
+    }).catch(function(e) { $('c-list').textContent = e.message; });
+  }
+  auth.onAuthStateChanged(function(u) {
+    if (!u) return location.href = 'login.html';
+    bbNav(u);
+    if (u.uid !== OWNER_UID) { $('m').innerHTML = '<div class="empty">Only the owner can open this page.</div>'; return; }
+    $('m').innerHTML =
+      '<section class="card"><h3>GIFT BOMBOPOINTS</h3><p>Type a user id or an exact name. They get a popup with a CLAIM button next time they are on.</p><div class="row"><input class="txt" id="g-to" placeholder="User id or exact name"><input class="txt" id="g-amt" type="number" min="1" placeholder="Amount" style="flex:0 1 120px"><button class="btn" id="g-go">Send</button></div><div class="shop-msg" id="g-msg"></div></section>' +
+      '<section class="card"><h3>REDEEM CODES</h3><p>Make a code. People type it in the Shop. One use per person.</p><div class="row"><input class="txt" id="c-code" maxlength="30" placeholder="e.g. WELCOME100 (empty = random)"><input class="txt" id="c-pts" type="number" min="1" placeholder="Points" style="flex:0 1 120px"><button class="btn" id="c-go">Create</button></div><div class="shop-msg" id="c-msg"></div><div id="c-list"></div></section>';
+    $('g-go').onclick = function() {
+      var n = Math.floor(Number($('g-amt').value)); if (!(n >= 1 && n <= 1000000)) return say('g-msg', 'Amount must be 1 to 1000000');
+      bbFindUser($('g-to').value).then(function(t) {
+        if (!t) throw new Error('User not found');
+        return db.collection('gifts').add({ to: t.uid, from: u.uid, fromName: 'Bomboblox', amount: n, at: new Date().toISOString(), claimed: false }).then(function() { say('g-msg', 'Sent ' + n + ' points to ' + t.name, true); $('g-amt').value = ''; });
+      }).catch(function(e) { say('g-msg', e.message); });
+    };
+    $('c-go').onclick = function() {
+      var code = ($('c-code').value.trim() || Math.random().toString(36).slice(2, 8)).toUpperCase(), n = Math.floor(Number($('c-pts').value));
+      if (!/^[A-Z0-9_-]{3,30}$/.test(code)) return say('c-msg', 'Code: letters, numbers, - and _ (3 to 30 chars)');
+      if (!(n >= 1 && n <= 1000000)) return say('c-msg', 'Points must be 1 to 1000000');
+      var r = db.collection('codes').doc(code);
+      r.get().then(function(d) { if (d.exists) throw new Error('That code already exists'); return r.set({ points: n, createdAt: new Date().toISOString() }); })
+        .then(function() { say('c-msg', 'Created ' + code + ' (' + n + ' points)', true); $('c-code').value = ''; $('c-pts').value = ''; codes(); }).catch(function(e) { say('c-msg', e.message); });
+    };
+    $('c-list').addEventListener('click', function(e) { var b = e.target.closest('[data-del]'); if (b && confirm('Delete code ' + b.dataset.del + '?')) db.collection('codes').doc(b.dataset.del).delete().then(codes); });
+    codes();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop - Bomboblox</title>
+<link rel="icon" type="image/png" href="bomboblox.png">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+main{max-width:900px}
+.bal{display:flex;align-items:center;gap:12px}.bal .pts-coin{width:44px;height:44px}.bal b{font:52px Bangers,Impact,fantasy;letter-spacing:2px;line-height:1}.bal span{font-size:13px;font-weight:900;color:#ff6a00}
+.looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.look{background:#1e1e1e;border:2px solid #2a2a2a;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}.look.on{border-color:#ff6a00;background:#2a1608}
+.look .pic{width:100%;aspect-ratio:5/8;background:#161616;border:2px solid #2a2a2a}.look .pic svg{width:100%;height:100%;padding:8%}
+.look .ln{font-size:14px;font-weight:900}.look .lp{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:900;color:#ffb066}.look .lp .pts-coin{width:16px;height:16px}.look .btn{width:100%;height:32px}
+.row{display:flex;flex-wrap:wrap;gap:8px}.row .txt{flex:1 1 140px}
+.card h3{font:24px Bangers,Impact,fantasy;letter-spacing:1px;color:#ff6a00;font-weight:normal;margin-bottom:6px}.card p{font-size:13px;color:#aaa;line-height:1.5;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn" id="btn-login">Log In</a><a href="signup.html" class="auth-btn" id="btn-signup">Sign Up</a></div></div>
+<main>
+  <div class="bal"><div id="balcoin"></div><div><b class="pts-n">0</b><br><span>Bombopoints</span></div></div>
+  <section>
+    <div class="section-label" style="margin-bottom:6px">My Avatar</div>
+    <p class="empty" style="padding-top:0">Pick which look you wear. Everyone starts as a noob!</p>
+    <div class="looks" id="mine"></div>
+  </section>
+  <section>
+    <div class="section-label" style="margin-bottom:6px">Avatar Shop</div>
+    <p class="empty" style="padding-top:0">Earn Bombopoints with daily quests on the Home page.</p>
+    <div class="shop-msg" id="msg"></div>
+    <div class="looks" id="shop"></div>
+  </section>
+  <section class="card">
+    <h3>&#127873; Gift Bombopoints</h3><p>Send some of your points to a friend. Type their exact name.</p>
+    <div class="row"><input class="txt" id="g-to" placeholder="Their name" maxlength="30"><input class="txt" id="g-amt" type="number" min="1" placeholder="Amount" style="flex:0 1 120px"><button class="btn" id="g-go">Send gift</button></div>
+    <div class="shop-msg" id="g-msg"></div>
+  </section>
+  <section class="card">
+    <h3>&#127903;&#65039; Redeem a code</h3><p>Got a code? Type it in. Each code works once per person.</p>
+    <div class="row"><input class="txt" id="c-in" placeholder="ENTER CODE" maxlength="30" style="text-transform:uppercase;letter-spacing:2px"><button class="btn" id="c-go">Redeem</button></div>
+    <div class="shop-msg" id="c-msg"></div>
+  </section>
+</main>
+<footer>&copy; Bomboblox. A fan-made game platform, not affiliated with Roblox.</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="bb.js"></script>
+<script>
+  var $ = function(i) { return document.getElementById(i); }, owned = [], wearing = 'noob', tries = 0;
+  function say(id, t, ok) { var m = $(id); m.className = 'shop-msg ' + (ok ? 'ok' : 'bad'); m.textContent = t; }
+  function card(id, mode) {
+    var L = BB_LOOKS[id], on = id === wearing;
+    return '<div class="look' + (on && mode === 'mine' ? ' on' : '') + '"><div class="pic">' + bbSvg(id) + '</div><div class="ln">' + esc(L.n) + '</div>' +
+      (mode === 'mine' ? (on ? '<button class="btn" disabled>Wearing</button>' : '<button class="btn outline" data-wear="' + id + '">Wear</button>')
+        : '<div class="lp">' + BB_COIN + L.p + '</div>' + (owned.indexOf(id) > -1 ? '<button class="btn" disabled>Owned</button>' : '<button class="btn" data-buy="' + id + '"' + (BB_PTS < L.p ? ' style="opacity:.6"' : '') + '>Buy</button>')) + '</div>';
+  }
+  function draw() {
+    $('mine').innerHTML = ['noob'].concat(LOOK_IDS.filter(function(i) { return owned.indexOf(i) > -1; })).map(function(i) { return card(i, 'mine'); }).join('');
+    $('shop').innerHTML = LOOK_IDS.map(function(i) { return card(i, 'shop'); }).join('');
+  }
+  function reload() {
+    Promise.all([bbOwnedLooks(), db.collection('users').doc(auth.currentUser.uid).get()]).then(function(r) { owned = r[0]; wearing = (r[1].data() || {}).look || 'noob'; draw(); });
+  }
+  document.addEventListener('click', function(e) {
+    var w = e.target.closest('[data-wear]'), b = e.target.closest('[data-buy]');
+    if (w) { w.disabled = true; bbWear(w.dataset.wear).then(reload).catch(function(err) { alert(err.message); w.disabled = false; }); }
+    if (b) { b.disabled = true; bbBuyLook(b.dataset.buy).then(function() { say('msg', 'You bought ' + BB_LOOKS[b.dataset.buy].n + '! Go wear it above.', true); reload(); }).catch(function(err) { say('msg', err.message); b.disabled = false; }); }
+  });
+  window.addEventListener('bbpoints', function() { if (auth.currentUser) draw(); });
+  $('g-go').onclick = function() {
+    var t = $('g-to').value.trim(), n = $('g-amt').value; $('g-go').disabled = true;
+    bbFindUser(t).then(function(u) { if (!u) throw new Error('No user with exactly that name'); return bbSendGift(u.uid, n).then(function() { say('g-msg', 'Sent ' + n + ' Bombopoints to ' + u.name + '!', true); $('g-amt').value = ''; }); })
+      .catch(function(err) { say('g-msg', err.message); }).then(function() { $('g-go').disabled = false; });
+  };
+  $('c-go').onclick = function() {
+    var c = $('c-in').value.trim(); if (!c) return;
+    if (++tries > 8) return say('c-msg', 'Too many tries. Refresh the page and wait a bit.');
+    $('c-go').disabled = true;
+    bbRedeem(c).then(function(p) { say('c-msg', '+' + bbFmt(p) + ' Bombopoints!', true); $('c-in').value = ''; }).catch(function(err) { say('c-msg', err.message); }).then(function() { $('c-go').disabled = false; });
+  };
+  auth.onAuthStateChanged(function(u) {
+    if (!u) return location.href = 'login.html';
+    bbNav(u); bbAct('shop'); $('balcoin').innerHTML = BB_COIN.replace('class="pts-coin"', 'class="pts-coin" style="width:44px;height:44px"'); reload();
+  });
+</script>
+</body>
+</html>
