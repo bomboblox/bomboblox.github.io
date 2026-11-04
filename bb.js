@@ -1,7 +1,7 @@
 /* Bomboblox shared code. Load the firebase app/auth/firestore compat scripts BEFORE this file. */
 
 /* ====== 1) PASTE YOUR NEW FIREBASE CONFIG HERE (see SETUP.md) ====== */
-var BB_FIREBASE={apiKey:"PASTE-API-KEY",authDomain:"PASTE-PROJECT-ID.firebaseapp.com",projectId:"PASTE-PROJECT-ID",storageBucket:"PASTE-PROJECT-ID.firebasestorage.app",messagingSenderId:"PASTE",appId:"PASTE"};
+var BB_FIREBASE={apiKey:"AIzaSyA1yGuSQ1sK5_oESRyTmfV_q5i6ZiLhdt0",authDomain:"bomboblox.firebaseapp.com",projectId:"bomboblo",storageBucket:"bomboblox.firebasestorage.app",messagingSenderId:"213718036243",appId:"1:213718036243:web:ab59b8145667ed764a74e6"};
 /* ====== 2) PASTE THE UID OF YOUR OWNER ACCOUNT HERE ====== */
 var OWNER_UID='PASTE-OWNER-UID-HERE';
 
