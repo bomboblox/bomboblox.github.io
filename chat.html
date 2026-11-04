@@ -4,22 +4,22 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat - Bomboblox</title>
 <link rel="icon" type="image/png" href="bomboblox.png">
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
 main{max-width:1000px;display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
 @media(max-width:720px){main{grid-template-columns:1fr}}
-.panel{background:#1e1e1e;border:2px solid #2a2a2a;display:flex;flex-direction:column}
-.panel>h2{font:22px Bangers,Impact,fantasy;letter-spacing:2px;color:#ff6a00;padding:12px 16px;border-bottom:2px solid #2a2a2a;background:#191919;font-weight:normal}
+.panel{background:#201c2b;border:2px solid #2b2638;display:flex;flex-direction:column}
+.panel>h2{font:15px Bungee,Impact,fantasy;letter-spacing:2px;color:#ff8c1a;padding:12px 16px;border-bottom:2px solid #2b2638;background:#1a1724;font-weight:normal}
 #list{max-height:70vh;overflow-y:auto}
-.ci{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2a2a2a}.ci:hover{background:#262626}.ci.on{background:#2a1608;border-left:4px solid #ff6a00}
+.ci{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2b2638}.ci:hover{background:#272233}.ci.on{background:#3a2308;border-left:4px solid #ff8c1a}
 .ci .t{min-width:0}.ci .n{font-size:14px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ci .l{font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel .empty{padding:18px 16px}
-#thead{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid #2a2a2a;background:#191919;font-weight:900;font-size:16px}#thead a:hover{color:#ff6a00}
+#thead{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid #2b2638;background:#1a1724;font-weight:900;font-size:16px}#thead a:hover{color:#ff8c1a}
 #msgs{height:55vh;min-height:280px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
-.m{max-width:75%;padding:8px 12px;font-size:14px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap;background:#2a2a2a;align-self:flex-start;border-left:3px solid #555}
-.m.me{align-self:flex-end;background:#3a1d08;border-left:0;border-right:3px solid #ff6a00}.m .tm{display:block;font-size:10px;color:#777;margin-top:3px}
-#send{display:flex;gap:8px;padding:12px;border-top:2px solid #2a2a2a}#txt{flex:1;height:42px}
-#err{font-size:12px;font-weight:900;color:#ff5a5a;padding:0 12px 10px}#err:empty{display:none}
+.m{max-width:75%;padding:8px 12px;font-size:14px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap;background:#2b2638;align-self:flex-start;border-left:3px solid #555}
+.m.me{align-self:flex-end;background:#4a2a0a;border-left:0;border-right:3px solid #ff8c1a}.m .tm{display:block;font-size:10px;color:#777;margin-top:3px}
+#send{display:flex;gap:8px;padding:12px;border-top:2px solid #2b2638}#txt{flex:1;height:42px}
+#err{font-size:12px;font-weight:900;color:#ff4d6d;padding:0 12px 10px}#err:empty{display:none}
 </style>
 </head>
 <body>
