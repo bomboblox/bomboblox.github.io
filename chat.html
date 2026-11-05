@@ -28,11 +28,11 @@ main{max-width:1000px;display:grid;grid-template-columns:280px 1fr;gap:16px;alig
   <section class="panel"><h2> My chats</h2><div id="list"><div class="empty">Loading...</div></div></section>
   <section class="panel" id="thread"></section>
 </main>
-<footer>Bomboblox is a fan-made platform and is not affiliated with Roblox.</footer>
+<footer>Bomboblox is a fan-made platform and is not affiliated with Roblox. (v3)</footer>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="bb.js"></script>
+<script src="bb.js?v=3"></script>
 <script>
   var $ = function(i) { return document.getElementById(i); };
   var cu = null, other = new URLSearchParams(location.search).get('uid'), otherName = '', unMsgs = null, lastSend = 0;

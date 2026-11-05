@@ -25,11 +25,11 @@ main{max-width:900px}
     <div class="friend-grid" id="friends"></div>
   </section>
 </main>
-<footer>Bomboblox is a fan-made platform and is not affiliated with Roblox.</footer>
+<footer>Bomboblox is a fan-made platform and is not affiliated with Roblox. (v3)</footer>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="bb.js"></script>
+<script src="bb.js?v=3"></script>
 <script>
   var $ = function(i) { return document.getElementById(i); };
   var uid = new URLSearchParams(location.search).get('uid'), me = null, bioNow = '';
@@ -40,7 +40,7 @@ main{max-width:900px}
   function load() {
     if (!uid) { $('wrap').textContent = 'No user specified.'; return; }
     db.collection('users').doc(uid).get().then(function(d) {
-      if (!d.exists) { $('wrap').textContent = 'User not found.'; return; }
+      if (!d.exists) { $('wrap').textContent = 'User not found.'; if (uid === me.uid) bbSetupModal(me); return; }
       var x = d.data(), mine = uid === me.uid; bioNow = x.bio || '';
       $('wrap').className = ''; 
       $('wrap').innerHTML = '<div class="pbox"><div id="p-av">' + bbSvg(x.look) + '</div><div class="pinfo"><h2>' + esc(x.username || 'Unknown') + '</h2>' +
