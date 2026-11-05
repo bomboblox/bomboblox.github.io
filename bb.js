@@ -3,7 +3,7 @@
 /* ====== 1) FIREBASE CONFIG (already filled in) ====== */
 var BB_FIREBASE={apiKey:"AIzaSyA1yGuSQ1sK5_oESRyTmfV_q5i6ZiLhdt0",authDomain:"bomboblox.firebaseapp.com",projectId:"bomboblox",storageBucket:"bomboblox.firebasestorage.app",messagingSenderId:"213718036243",appId:"1:213718036243:web:ab59b8145667ed764a74e6"};
 /* ====== 2) PASTE THE UID OF YOUR OWNER ACCOUNT HERE ====== */
-var OWNER_UID='PASTE-OWNER-UID-HERE';
+var OWNER_UID='xZu0gq6EWeVq73AKHwJCBPAuAmu2';
 
 firebase.initializeApp(BB_FIREBASE);
 var auth=firebase.auth(),db=firebase.firestore();
