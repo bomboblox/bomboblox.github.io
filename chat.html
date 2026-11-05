@@ -4,31 +4,31 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat - Bomboblox</title>
 <link rel="icon" type="image/png" href="bomboblox.png">
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 main{max-width:1000px;display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
 @media(max-width:720px){main{grid-template-columns:1fr}}
-.panel{background:#201c2b;border:2px solid #2b2638;display:flex;flex-direction:column}
-.panel>h2{font:15px Bungee,Impact,fantasy;letter-spacing:2px;color:#ff8c1a;padding:12px 16px;border-bottom:2px solid #2b2638;background:#1a1724;font-weight:normal}
+.panel{background:#1e1e1e;border:2px solid #2a2a2a;display:flex;flex-direction:column}
+.panel>h2{font:900 16px 'Source Sans 3',Arial,sans-serif;letter-spacing:2px;color:#ff6a00;padding:12px 16px;border-bottom:2px solid #2a2a2a;background:#1a1a1a;font-weight:normal}
 #list{max-height:70vh;overflow-y:auto}
-.ci{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2b2638}.ci:hover{background:#272233}.ci.on{background:#3a2308;border-left:4px solid #ff8c1a}
+.ci{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2a2a2a}.ci:hover{background:#262626}.ci.on{background:#2a1608;border-left:4px solid #ff6a00}
 .ci .t{min-width:0}.ci .n{font-size:14px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ci .l{font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel .empty{padding:18px 16px}
-#thead{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid #2b2638;background:#1a1724;font-weight:900;font-size:16px}#thead a:hover{color:#ff8c1a}
+#thead{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid #2a2a2a;background:#1a1a1a;font-weight:900;font-size:16px}#thead a:hover{color:#ff6a00}
 #msgs{height:55vh;min-height:280px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
-.m{max-width:75%;padding:8px 12px;font-size:14px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap;background:#2b2638;align-self:flex-start;border-left:3px solid #555}
-.m.me{align-self:flex-end;background:#4a2a0a;border-left:0;border-right:3px solid #ff8c1a}.m .tm{display:block;font-size:10px;color:#777;margin-top:3px}
-#send{display:flex;gap:8px;padding:12px;border-top:2px solid #2b2638}#txt{flex:1;height:42px}
-#err{font-size:12px;font-weight:900;color:#ff4d6d;padding:0 12px 10px}#err:empty{display:none}
+.m{max-width:75%;padding:8px 12px;font-size:14px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap;background:#2a2a2a;align-self:flex-start;border-left:3px solid #555}
+.m.me{align-self:flex-end;background:#3a1d08;border-left:0;border-right:3px solid #ff6a00}.m .tm{display:block;font-size:10px;color:#777;margin-top:3px}
+#send{display:flex;gap:8px;padding:12px;border-top:2px solid #2a2a2a}#txt{flex:1;height:42px}
+#err{font-size:12px;font-weight:900;color:#ff4444;padding:0 12px 10px}#err:empty{display:none}
 </style>
 </head>
 <body>
-<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn" id="btn-login">Log In</a><a href="signup.html" class="auth-btn" id="btn-signup">Sign Up</a></div></div>
+<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn">Log de In</a><a href="signup.html" class="auth-btn">Sign de Up</a></div></div>
 <main>
-  <section class="panel"><h2>&#128172; My chats</h2><div id="list"><div class="empty">Loading...</div></div></section>
+  <section class="panel"><h2> My chats</h2><div id="list"><div class="empty">Loading...</div></div></section>
   <section class="panel" id="thread"></section>
 </main>
-<footer>&copy; Bomboblox. A fan-made game platform, not affiliated with Roblox.</footer>
+<footer>Bomboblox is a fan-made platform and is not affiliated with Roblox.</footer>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -42,7 +42,7 @@ main{max-width:1000px;display:grid;grid-template-columns:280px 1fr;gap:16px;alig
   auth.onAuthStateChanged(function(u) {
     if (!u) return location.href = 'login.html';
     cu = u; bbNav(u); loadList();
-    if (other) openChat(); else $('thread').innerHTML = '<div class="empty">Pick a chat on the left, or open a profile and press &#128172; Chat.</div>';
+    if (other) openChat(); else $('thread').innerHTML = '<div class="empty">Pick a chat on the left, or open a profile and press  Chat.</div>';
   });
 
   /* left side: everybody ive talked to */
@@ -51,7 +51,7 @@ main{max-width:1000px;display:grid;grid-template-columns:280px 1fr;gap:16px;alig
       $('list').innerHTML = q.docs.length ? q.docs.map(function(d) {
         var x = d.data();
         return '<a class="ci' + (d.id === other ? ' on' : '') + '" href="chat.html?uid=' + encodeURIComponent(d.id) + '">' + bbAvU(d.id, x.name, 40) + '<div class="t"><div class="n">' + esc(x.name || 'Unknown') + '</div><div class="l">' + (x.from === cu.uid ? 'You: ' : '') + esc(x.last) + '</div></div></a>';
-      }).join('') : '<div class="empty">No chats yet. Open a friend\'s profile and press &#128172; Chat to start one.</div>';
+      }).join('') : '<div class="empty">No chats yet. Open a friend\'s profile and press  Chat to start one.</div>';
     }, function(e) { $('list').innerHTML = '<div class="empty">Could not load chats: ' + esc(e.message) + '</div>'; });
   }
 

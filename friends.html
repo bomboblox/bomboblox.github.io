@@ -4,24 +4,24 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Friends - Bomboblox</title>
 <link rel="icon" type="image/png" href="bomboblox.png">
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-#tabs{display:flex;flex-wrap:wrap;border-bottom:2px solid #2b2638}
-.tab{padding:10px 18px;font:900 14px Rubik,sans-serif;color:#aaa;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer}.tab:hover{color:#ff8c1a}.tab.on{color:#ff8c1a;border-bottom-color:#ff8c1a}
+#tabs{display:flex;flex-wrap:wrap;border-bottom:2px solid #2a2a2a}
+.tab{padding:10px 18px;font:900 14px 'Source Sans 3',sans-serif;color:#aaa;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer}.tab:hover{color:#ff6a00}.tab.on{color:#ff6a00;border-bottom-color:#ff6a00}
 .tab .n{background:#ff2b2b;color:#fff;font-size:11px;padding:1px 6px;border-radius:9px;margin-left:5px}
 .pane{display:none;flex-direction:column;gap:14px}.pane.on{display:flex}
 #findbar{display:flex;gap:8px}#findbar .txt{flex:1}
-.prow{display:flex;align-items:center;gap:12px;background:#201c2b;border:2px solid #2b2638;padding:10px 14px}.prow:hover{border-color:#ff8c1a}
+.prow{display:flex;align-items:center;gap:12px;background:#1e1e1e;border:2px solid #2a2a2a;padding:10px 14px}.prow:hover{border-color:#ff6a00}
 .prow .pn{flex:1;min-width:0}.prow .pn a{font-size:15px;font-weight:900;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.prow .pn small{font-size:11px;color:#777}
 </style>
 </head>
 <body>
-<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn" id="btn-login">Log In</a><a href="signup.html" class="auth-btn" id="btn-signup">Sign Up</a></div></div>
+<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn">Log de In</a><a href="signup.html" class="auth-btn">Sign de Up</a></div></div>
 <main>
   <nav id="tabs">
-    <button class="tab on" data-t="mine">My Friends <span id="c-mine"></span></button>
+    <button class="tab on" data-t="mine">My Frenz <span id="c-mine"></span></button>
     <button class="tab" data-t="req">Requests <span id="c-req"></span></button>
-    <button class="tab" data-t="find">Find People</button>
+    <button class="tab" data-t="find">All Chanals</button>
   </nav>
 
   <section class="pane on" id="p-mine"><div class="friend-grid" id="friends"><div class="empty">Loading...</div></div></section>
@@ -31,7 +31,7 @@
     <div id="results" style="display:flex;flex-direction:column;gap:10px"></div>
   </section>
 </main>
-<footer>&copy; Bomboblox. A fan-made game platform, not affiliated with Roblox.</footer>
+<footer>Bomboblox is a fan-made platform and is not affiliated with Roblox.</footer>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -71,12 +71,12 @@
     var U = db.collection('users').doc(u.uid);
     U.collection('friends').orderBy('at', 'desc').limit(200).onSnapshot(function(q) {
       $('c-mine').textContent = '(' + q.docs.length + ')';
-      $('friends').innerHTML = q.docs.length ? q.docs.map(function(d) { return bbFriendTile(d.id, d.data()); }).join('') : '<div class="empty" style="grid-column:1/-1">No friends yet. Use the Find People tab!</div>';
+      $('friends').innerHTML = q.docs.length ? q.docs.map(function(d) { return bbFriendTile(d.id, d.data()); }).join('') : '<div class="empty" style="grid-column:1/-1">No frenz yet. Use da All Chanals tab!</div>';
     }, function(e) { $('friends').innerHTML = '<div class="empty">Error: ' + esc(e.message) + '</div>'; });
     U.collection('friendReqs').orderBy('at', 'desc').limit(50).onSnapshot(function(q) {
       var n = q.docs.length;
       $('c-req').innerHTML = n ? '<span class="n">' + n + '</span>' : '';
-      $('reqs').innerHTML = n ? q.docs.map(function(d) { return bbReqRow(d.id, d.data()); }).join('') : '<div class="empty">No friend requests right now.</div>';
+      $('reqs').innerHTML = n ? q.docs.map(function(d) { return bbReqRow(d.id, d.data()); }).join('') : '<div class="empty">No frend requests right now.</div>';
     }, function() {});
   });
 </script>
