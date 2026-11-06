@@ -220,11 +220,20 @@ var TEXFN = [
   function(x) { x.fillStyle = '#5b6066'; x.fillRect(0, 0, 128, 128); for (var i = 0; i < 90; i++) { var g = Math.floor(rnd(60, 130)); x.fillStyle = 'rgba(' + g + ',' + g + ',' + (g + 6) + ',.28)'; x.fillRect(rnd(0, 110), rnd(0, 110), rnd(8, 30), rnd(8, 30)); } x.strokeStyle = 'rgba(20,22,26,.5)'; for (i = 0; i < 6; i++) { x.beginPath(); var a = rnd(0, 128), b = rnd(0, 128); x.moveTo(a, b); x.lineTo(a + rnd(-30, 30), b + rnd(-30, 30)); x.stroke(); } },
   function(x) { x.fillStyle = '#b9b3a8'; x.fillRect(0, 0, 128, 128); var cs = ['#a5432f', '#963a28', '#b04e36', '#9d4430']; for (var row = 0; row < 4; row++) for (var k = -1; k < 3; k++) { x.fillStyle = cs[(row + k + 2) % 4]; x.fillRect(k * 64 + (row % 2 ? 32 : 0) + 2, row * 32 + 2, 60, 28); } }
 ];
+/* texture images in the repo root: fabric.png foil.png grass.png wood.png slate.png brick.png (one tile = TILE studs). Missing ones use the built-in look. */
+var IMG = ['fabric', 'foil', 'grass', 'wood', 'slate', 'brick'], TEXS = [], LOADED = [];
+function loadTextures() {
+  return Promise.all(IMG.map(function(n, i) {
+    return new Promise(function(res) {
+      new THREE.TextureLoader().load(n + '.png?v=' + Date.now(), function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; TEXS[i] = t; LOADED.push(n + '.png'); res(); }, undefined, function() { res(); });
+    });
+  }));
+}
 function getMat(i, transp) {
   if (!MATS3[i]) {
     if (i === 6) MATS3[i] = new THREE.MeshLambertMaterial({ color: 0xa3a2a5 });
     else {
-      var t = mkTex(TEXFN[i]);
+      var t = TEXS[i] || mkTex(TEXFN[i]);
       MATS3[i] = i === 1 ? new THREE.MeshPhongMaterial({ map: t, shininess: 90, specular: 0xffffff }) : new THREE.MeshLambertMaterial({ map: t });
     }
   }
@@ -276,8 +285,8 @@ function buildMap(data) {
   if (data.spawn) spawn = data.spawn;
   hasMap = true; scene.remove(base); scene.remove(grid);
 }
-var mapReady = fetch('map.json?v=' + Date.now()).then(function(r) { if (!r.ok) throw new Error('no map.json'); return r.json(); }).then(function(d) {
-  buildMap(d); document.getElementById('mapinfo').textContent = 'Map: ' + d.parts.length + ' parts';
+var mapReady = loadTextures().then(function() { return fetch('map.json?v=' + Date.now()); }).then(function(r) { if (!r.ok) throw new Error('no map.json'); return r.json(); }).then(function(d) {
+  buildMap(d); document.getElementById('mapinfo').textContent = 'Map: ' + d.parts.length + ' parts. Images: ' + (LOADED.length ? LOADED.join(', ') : 'none (built-in textures)');
 }).catch(function(e) {
   document.getElementById('mapinfo').textContent = e.message === 'no map.json' ? 'No map.json found, using the blank baseplate' : 'map.json is broken (' + e.message + '), using the baseplate';
 });
