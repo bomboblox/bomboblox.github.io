@@ -23,7 +23,7 @@ canvas{display:block}
 </style>
 </head>
 <body>
-<div id="hud"><h1>Bomboblox Test Place</h1><div id="status">Starting...</div><div id="plist"></div>
+<div id="hud"><h1>Bomboblox Test Place</h1><div id="status">Starting...</div><div id="mapinfo" style="color:#999;font-size:12px"></div><div id="plist"></div>
 <div class="hint">WASD / arrows: move<br>Space: jump<br>Hold mouse + drag: look<br>Scroll: zoom</div></div>
 
 <div id="join"><div class="box">
@@ -48,7 +48,7 @@ var DB_URL = 'https://bomboblox-default-rtdb.europe-west1.firebasedatabase.app';
 var CFG = { apiKey: "AIzaSyA1yGuSQ1sK5_oESRyTmfV_q5i6ZiLhdt0", authDomain: "bomboblox.firebaseapp.com", projectId: "bomboblox", databaseURL: DB_URL, appId: "1:213718036243:web:ab59b8145667ed764a74e6" };
 
 var MAX = 5, COLORS = [0xe53935, 0x1e88e5, 0x43a047, 0xfdd835, 0x8e24aa];
-var WALK = 16, JUMP = 50, GRAV = 196.2, LIMIT = 250;   /* roblox-like: studs per second */
+var WALK = 16, JUMP = 53.15, GRAV = 196.2, LIMIT = 250;   /* roblox-like: 16 studs/s, jump height 7.2 studs */
 
 /* ---------- scene ---------- */
 var scene = new THREE.Scene();
@@ -129,10 +129,12 @@ function stepMe(dt) {
     var d = Math.atan2(dx, dz) - rot; d = Math.atan2(Math.sin(d), Math.cos(d));
     rot += d * Math.min(1, dt * 14);
   }
+  pushOut();
   if (keys.Space && onGround) { vy = JUMP; onGround = false; }
-  vy -= GRAV * dt; pos.y += vy * dt;
-  if (pos.y <= 0) { pos.y = 0; vy = 0; onGround = true; } else onGround = false;
-  pos.x = Math.max(-LIMIT, Math.min(LIMIT, pos.x)); pos.z = Math.max(-LIMIT, Math.min(LIMIT, pos.z));
+  var py = pos.y, v0 = vy; vy -= GRAV * dt; pos.y += (v0 + vy) / 2 * dt;      /* exact for constant gravity */
+  vertical(py);
+  if (!hasMap) { pos.x = Math.max(-LIMIT, Math.min(LIMIT, pos.x)); pos.z = Math.max(-LIMIT, Math.min(LIMIT, pos.z)); }
+  if (pos.y < -200) respawn();
   me.g.position.set(pos.x, pos.y, pos.z); me.inner.rotation.y = rot;
   animate(me, dt, moving && onGround, pos.y);
 }
@@ -165,7 +167,7 @@ function connect(name) {
         if (!ok) return claim(i + 1);
         clearTimeout(fail); slot = i; dbOK = true; sref = db.ref('game/slots/' + i); sref.onDisconnect().remove();
         me.torso.material.color.setHex(COLORS[i]);
-        pos.x = (i - 2) * 4; pos.z = 0;                       /* spawn side by side */
+        pos.x += (i - 2) * 3;                                   /* spawn side by side */
         db.ref('game/slots').on('value', function(snap) { syncRemotes(snap.val() || {}); });
         setInterval(sendMe, 70); drawList();
       }, false);
@@ -202,6 +204,115 @@ function stepRemotes(dt) {
 }
 addEventListener('beforeunload', function() { if (sref) sref.remove(); });
 
+/* ---------- map import (map.json from BomboExport.lua) ---------- */
+/* materials: 0 Fabric, 1 Foil, 2 Grass, 3 Wood, 4 Slate, 5 Brick, 6 anything else (grey). Textures are drawn in code, 4 studs per tile. */
+var TILE = 4, colliders = [], hasMap = false, spawn = [0, 0, 0], PR = 0.9, PH = 5, STEP = 1.0, MATS3 = [];
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function mkTex(fn) {
+  var c = document.createElement('canvas'); c.width = c.height = 128; var x = c.getContext('2d'); fn(x);
+  var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t;
+}
+var TEXFN = [
+  function(x) { x.fillStyle = '#cdbfa6'; x.fillRect(0, 0, 128, 128); for (var i = 0; i < 128; i += 4) { x.fillStyle = 'rgba(0,0,0,.14)'; x.fillRect(i, 0, 2, 128); x.fillRect(0, i, 128, 2); } for (i = 0; i < 300; i++) { x.fillStyle = 'rgba(255,255,255,.1)'; x.fillRect(rnd(0, 126), rnd(0, 126), 2, 2); } },
+  function(x) { x.fillStyle = '#cfd6dd'; x.fillRect(0, 0, 128, 128); for (var i = 0; i < 50; i++) { x.strokeStyle = Math.random() < 0.5 ? 'rgba(255,255,255,.4)' : 'rgba(90,100,110,.25)'; x.lineWidth = rnd(1, 3); x.beginPath(); var a = rnd(0, 128), b = rnd(0, 128); x.moveTo(a, b); x.lineTo(a + rnd(-30, 30), b + rnd(-30, 30)); x.stroke(); } },
+  function(x) { x.fillStyle = '#4f9a34'; x.fillRect(0, 0, 128, 128); var cs = ['#3f8228', '#63b044', '#58a03a']; for (var i = 0; i < 700; i++) { x.fillStyle = cs[i % 3]; x.fillRect(rnd(0, 126), rnd(0, 122), 2, rnd(3, 6)); } },
+  function(x) { x.fillStyle = '#a9743d'; x.fillRect(0, 0, 128, 128); for (var i = 0; i < 70; i++) { x.strokeStyle = 'rgba(60,35,10,.25)'; x.lineWidth = 1; var y = rnd(0, 128); x.beginPath(); x.moveTo(0, y); x.bezierCurveTo(40, y + rnd(-3, 3), 80, y + rnd(-3, 3), 128, y); x.stroke(); } x.fillStyle = 'rgba(40,22,6,.7)'; for (i = 0; i < 128; i += 32) x.fillRect(0, i, 128, 2); },
+  function(x) { x.fillStyle = '#5b6066'; x.fillRect(0, 0, 128, 128); for (var i = 0; i < 90; i++) { var g = Math.floor(rnd(60, 130)); x.fillStyle = 'rgba(' + g + ',' + g + ',' + (g + 6) + ',.28)'; x.fillRect(rnd(0, 110), rnd(0, 110), rnd(8, 30), rnd(8, 30)); } x.strokeStyle = 'rgba(20,22,26,.5)'; for (i = 0; i < 6; i++) { x.beginPath(); var a = rnd(0, 128), b = rnd(0, 128); x.moveTo(a, b); x.lineTo(a + rnd(-30, 30), b + rnd(-30, 30)); x.stroke(); } },
+  function(x) { x.fillStyle = '#b9b3a8'; x.fillRect(0, 0, 128, 128); var cs = ['#a5432f', '#963a28', '#b04e36', '#9d4430']; for (var row = 0; row < 4; row++) for (var k = -1; k < 3; k++) { x.fillStyle = cs[(row + k + 2) % 4]; x.fillRect(k * 64 + (row % 2 ? 32 : 0) + 2, row * 32 + 2, 60, 28); } }
+];
+function getMat(i, transp) {
+  if (!MATS3[i]) {
+    if (i === 6) MATS3[i] = new THREE.MeshLambertMaterial({ color: 0xa3a2a5 });
+    else {
+      var t = mkTex(TEXFN[i]);
+      MATS3[i] = i === 1 ? new THREE.MeshPhongMaterial({ map: t, shininess: 90, specular: 0xffffff }) : new THREE.MeshLambertMaterial({ map: t });
+    }
+  }
+  if (transp > 0.01) { var m = MATS3[i].clone(); m.transparent = true; m.opacity = 1 - transp; return m; }
+  return MATS3[i];
+}
+function boxGeo(sx, sy, sz) {
+  var g = new THREE.BoxGeometry(sx, sy, sz), uv = g.attributes.uv, d = [[sz, sy], [sz, sy], [sx, sz], [sx, sz], [sx, sy], [sx, sy]];
+  for (var f = 0; f < 6; f++) for (var v = 0; v < 4; v++) { var i = f * 4 + v; uv.setXY(i, uv.getX(i) * d[f][0] / TILE, uv.getY(i) * d[f][1] / TILE); }
+  return g;
+}
+function scaleUV(g, k) { var uv = g.attributes.uv; for (var i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * k, uv.getY(i) * k); return g; }
+function wedgeGeo(sx, sy, sz) {            /* slope rises toward +Z (the back), like a Roblox WedgePart */
+  var x = sx / 2, y = sy / 2, z = sz / 2, A = [-x, -y, -z], B = [x, -y, -z], C = [x, -y, z], D = [-x, -y, z], E = [-x, y, z], F = [x, y, z];
+  var T = [[A, B, C], [A, C, D], [D, C, F], [D, F, E], [A, F, B], [A, E, F], [A, D, E], [B, F, C]], pos = [], uv = [];
+  T.forEach(function(t) { t.forEach(function(v) { pos.push(v[0], v[1], v[2]); uv.push(v[0] / TILE, (v[1] + v[2]) / TILE); }); });
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals(); return g;
+}
+function addCollider(sx, sy, sz, x, y, z, R) {
+  var c = { x: x, z: z, hx: sx / 2, hz: sz / 2, bot: y - sy / 2, top: y + sy / 2, cs: 1, sn: 0 };
+  if (R) {
+    if (Math.abs(R[4]) > 0.999) { var th = Math.atan2(R[2], R[0]); c.cs = Math.cos(th); c.sn = Math.sin(th); }   /* turned only around Y: exact */
+    else {                                                                                                         /* tilted: use its bounding box */
+      var hx = sx / 2, hy = sy / 2, hz = sz / 2;
+      c.hx = Math.abs(R[0]) * hx + Math.abs(R[1]) * hy + Math.abs(R[2]) * hz;
+      var ey = Math.abs(R[3]) * hx + Math.abs(R[4]) * hy + Math.abs(R[5]) * hz;
+      c.hz = Math.abs(R[6]) * hx + Math.abs(R[7]) * hy + Math.abs(R[8]) * hz; c.bot = y - ey; c.top = y + ey;
+    }
+  }
+  colliders.push(c);
+}
+function buildMap(data) {
+  var grp = new THREE.Group(); scene.add(grp);
+  data.parts.forEach(function(q) {
+    var shape = q[0], mat = q[1], col = q[2], tr = q[3], sx = q[4], sy = q[5], sz = q[6], x = q[7], y = q[8], z = q[9], R = q[10] || null;
+    if (col) addCollider(sx, sy, sz, x, y, z, R);
+    if (tr >= 0.99) return;
+    var geo;
+    if (shape === 1) geo = scaleUV(new THREE.SphereGeometry(0.5, 20, 14), 1).scale(sx, sy, sz);
+    else if (shape === 2) { geo = new THREE.CylinderGeometry(0.5, 0.5, 1, 24); geo.rotateZ(Math.PI / 2); geo.scale(sx, sy, sz); }
+    else if (shape === 3) geo = wedgeGeo(sx, sy, sz);
+    else geo = boxGeo(sx, sy, sz);
+    if (shape === 1 || shape === 2) scaleUV(geo, Math.max(sx, sy, sz) / TILE * 1.5);
+    var m = new THREE.Mesh(geo, getMat(mat, tr)); m.matrixAutoUpdate = false;
+    m.matrix.set(R ? R[0] : 1, R ? R[1] : 0, R ? R[2] : 0, x, R ? R[3] : 0, R ? R[4] : 1, R ? R[5] : 0, y, R ? R[6] : 0, R ? R[7] : 0, R ? R[8] : 1, z, 0, 0, 0, 1);
+    m.updateMatrixWorld(true); grp.add(m);
+  });
+  if (data.spawn) spawn = data.spawn;
+  hasMap = true; scene.remove(base); scene.remove(grid);
+}
+var mapReady = fetch('map.json?v=' + Date.now()).then(function(r) { if (!r.ok) throw new Error('no map.json'); return r.json(); }).then(function(d) {
+  buildMap(d); document.getElementById('mapinfo').textContent = 'Map: ' + d.parts.length + ' parts';
+}).catch(function(e) {
+  document.getElementById('mapinfo').textContent = e.message === 'no map.json' ? 'No map.json found, using the blank baseplate' : 'map.json is broken (' + e.message + '), using the baseplate';
+});
+
+/* ---------- collision with the map ---------- */
+function respawn() { pos.x = spawn[0]; pos.y = spawn[1] + 0.1; pos.z = spawn[2]; vy = 0; onGround = false; }
+function near(c, r) {          /* is the player circle (radius r) overlapping this part from above/below? returns the push vector info */
+  var dx = pos.x - c.x, dz = pos.z - c.z, lx = c.cs * dx - c.sn * dz, lz = c.sn * dx + c.cs * dz;
+  var qx = Math.max(-c.hx, Math.min(c.hx, lx)), qz = Math.max(-c.hz, Math.min(c.hz, lz));
+  return { lx: lx, lz: lz, ex: lx - qx, ez: lz - qz, d2: (lx - qx) * (lx - qx) + (lz - qz) * (lz - qz) };
+}
+function pushOut() {
+  if (!hasMap) return;
+  for (var it = 0; it < 3; it++) for (var i = 0; i < colliders.length; i++) {
+    var c = colliders[i];
+    if (pos.y + STEP >= c.top || pos.y + PH <= c.bot) continue;      /* low enough to step onto, or we are under it */
+    var n = near(c, PR); if (n.d2 >= PR * PR) continue;
+    var px, pz;
+    if (n.d2 > 1e-8) { var d = Math.sqrt(n.d2), k = (PR - d) / d; px = n.ex * k; pz = n.ez * k; }
+    else { var ox = c.hx - Math.abs(n.lx), oz = c.hz - Math.abs(n.lz); if (ox < oz) { px = (n.lx >= 0 ? 1 : -1) * (ox + PR); pz = 0; } else { px = 0; pz = (n.lz >= 0 ? 1 : -1) * (oz + PR); } }
+    pos.x += c.cs * px + c.sn * pz; pos.z += -c.sn * px + c.cs * pz;
+  }
+}
+function vertical(py) {
+  if (!hasMap) { if (pos.y <= 0) { pos.y = 0; vy = 0; onGround = true; } else onGround = false; return; }
+  var ground = -1e9, ceil = 1e9;
+  for (var i = 0; i < colliders.length; i++) {
+    var c = colliders[i]; if (near(c, PR * 0.95).d2 >= PR * PR * 0.9) continue;
+    if (vy <= 0 && c.top <= py + STEP && c.top > ground) ground = c.top;
+    if (vy > 0 && c.bot >= py + PH - 0.01 && c.bot < ceil) ceil = c.bot;
+  }
+  if (vy > 0 && pos.y + PH > ceil) { pos.y = ceil - PH; vy = 0; }
+  if (vy <= 0 && pos.y <= ground) { pos.y = ground; vy = 0; onGround = true; } else onGround = false;
+}
+
 /* ---------- join + main loop ---------- */
 function join() {
   var n = document.getElementById('nm').value.trim().replace(/\s+/g, ' ').slice(0, 16);
@@ -209,7 +320,8 @@ function join() {
   try { localStorage.setItem('bb_game_name', n); } catch (e) {}
   document.getElementById('join').style.display = 'none';
   document.getElementById('hud').style.display = 'block';
-  me = makeAvatar(n, COLORS[0]); playing = true; setStatus('Connecting...'); drawList(); connect(n);
+  setStatus('Loading map...');
+  mapReady.then(function() { me = makeAvatar(n, COLORS[0]); respawn(); playing = true; setStatus('Connecting...'); drawList(); connect(n); });
 }
 document.getElementById('go').onclick = join;
 document.getElementById('nm').addEventListener('keydown', function(e) { if (e.key === 'Enter') join(); });
