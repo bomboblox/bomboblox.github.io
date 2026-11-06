@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bomboblox Test Place</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:Arial,Helvetica,sans-serif;color:#f1f1f1}
+canvas{display:block}
+#hud{position:fixed;top:10px;left:10px;background:rgba(17,17,17,.88);border-left:4px solid #ff6a00;padding:8px 14px;font-size:13px;line-height:1.55;min-width:210px;display:none}
+#hud h1{margin:0 0 4px;font-size:15px;color:#ff6a00}
+#hud .dot{display:inline-block;width:10px;height:10px;margin-right:6px}
+#hud .hint{color:#aaa;margin-top:6px;font-size:12px}
+#status{color:#999;font-size:12px}
+#join{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;z-index:5}
+#join .box{background:#1e1e1e;border:1px solid #ff6a00;padding:24px;width:300px;display:flex;flex-direction:column;gap:12px}
+#join h2{margin:0;font-size:22px;color:#ff6a00}
+#join input{height:38px;background:#111;border:1px solid #333;color:#f1f1f1;font-size:16px;padding:0 10px;outline:none}
+#join input:focus{border-color:#ff6a00}
+#join button{height:38px;background:#ff6a00;color:#111;border:0;font-weight:700;font-size:16px;cursor:pointer}
+#join button:hover{background:#e05a00}
+#join p{margin:0;font-size:12px;color:#999}
+</style>
+</head>
+<body>
+<div id="hud"><h1>Bomboblox Test Place</h1><div id="status">Starting...</div><div id="plist"></div>
+<div class="hint">WASD / arrows: move<br>Space: jump<br>Hold mouse + drag: look<br>Scroll: zoom</div></div>
+
+<div id="join"><div class="box">
+  <h2>Enter ur name</h2>
+  <input id="nm" maxlength="16" placeholder="Ur noob name" autocomplete="off">
+  <button id="go" type="button">Join</button>
+  <p>Up to 5 players at once.</p>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+/* ================= SETUP (multiplayer only) =================
+   Firebase > Build > Realtime Database > Create database. Copy the URL shown at the top of the Data tab
+   and paste it below. Examples:
+     Belgium (europe-west1): https://bomboblox-default-rtdb.europe-west1.firebasedatabase.app
+     United States:          https://bomboblox-default-rtdb.firebaseio.com
+   Rules tab (then Publish):  { "rules": { "game": { ".read": true, ".write": true } } }
+   Without this the game still works, but only for you (solo). */
+var DB_URL = 'https://bomboblox-default-rtdb.europe-west1.firebasedatabase.app';
+var CFG = { apiKey: "AIzaSyA1yGuSQ1sK5_oESRyTmfV_q5i6ZiLhdt0", authDomain: "bomboblox.firebaseapp.com", projectId: "bomboblox", databaseURL: DB_URL, appId: "1:213718036243:web:ab59b8145667ed764a74e6" };
+
+var MAX = 5, COLORS = [0xe53935, 0x1e88e5, 0x43a047, 0xfdd835, 0x8e24aa];
+var WALK = 16, JUMP = 50, GRAV = 196.2, LIMIT = 250;   /* roblox-like: studs per second */
+
+/* ---------- scene ---------- */
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87b8ea);
+scene.fog = new THREE.Fog(0x87b8ea, 160, 420);
+var cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 1000);
+var ren = new THREE.WebGLRenderer({ antialias: true });
+ren.setPixelRatio(Math.min(devicePixelRatio, 2));
+ren.setSize(innerWidth, innerHeight);
+document.body.appendChild(ren.domElement);
+scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+var sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(50, 100, 30); scene.add(sun);
+var base = new THREE.Mesh(new THREE.PlaneGeometry(512, 512), new THREE.MeshLambertMaterial({ color: 0x8d8d8d }));
+base.rotation.x = -Math.PI / 2; scene.add(base);
+var grid = new THREE.GridHelper(512, 128, 0x7a7a7a, 0x7a7a7a); grid.position.y = 0.02; scene.add(grid);   /* 1 square = 4 studs */
+
+/* ---------- blocky avatar (roblox proportions: legs 2, torso 2, head ~1, arms 2) ---------- */
+function box(w, h, d, c, x, y, z) {
+  var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: c }));
+  m.position.set(x, y, z); return m;
+}
+function nameTag(name) {
+  var c = document.createElement('canvas'); c.width = 256; c.height = 64;
+  var x = c.getContext('2d'); x.font = 'bold 30px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,.85)'; x.strokeText(name, 128, 32); x.fillStyle = '#fff'; x.fillText(name, 128, 32);
+  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
+  s.scale.set(5, 1.25, 1); s.position.set(0, 6.7, 0); s.renderOrder = 10; return s;
+}
+function makeAvatar(name, color) {
+  var g = new THREE.Group(), inner = new THREE.Group(); g.add(inner);
+  var torso = box(2, 2, 1, color, 0, 3, 0); inner.add(torso);
+  inner.add(box(1.2, 1.2, 1.2, 0xf5cd30, 0, 4.6, 0));
+  inner.add(box(0.18, 0.25, 0.05, 0x111111, -0.28, 4.7, 0.62), box(0.18, 0.25, 0.05, 0x111111, 0.28, 4.7, 0.62), box(0.6, 0.1, 0.05, 0x111111, 0, 4.3, 0.62));
+  function limb(c, x, y) { var p = new THREE.Group(); p.position.set(x, y, 0); p.add(box(1, 2, 1, c, 0, -1, 0)); inner.add(p); return p; }
+  var p = { g: g, inner: inner, torso: torso, aL: limb(0xf5cd30, -1.5, 4), aR: limb(0xf5cd30, 1.5, 4), lL: limb(0xa3c76d, -0.5, 2), lR: limb(0xa3c76d, 0.5, 2), amp: 0, ph: 0, name: name };
+  g.add(nameTag(name));
+  p.shadow = new THREE.Mesh(new THREE.CircleGeometry(1.3, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
+  p.shadow.rotation.x = -Math.PI / 2; p.shadow.position.y = 0.04;
+  scene.add(g); scene.add(p.shadow); return p;
+}
+function animate(p, dt, moving, y) {
+  p.amp += ((moving ? 0.9 : 0) - p.amp) * Math.min(1, dt * 12);
+  if (moving) p.ph += dt * 11;
+  var s = Math.sin(p.ph) * p.amp;
+  p.aL.rotation.x = s; p.aR.rotation.x = -s; p.lL.rotation.x = -s; p.lR.rotation.x = s;
+  p.shadow.position.x = p.g.position.x; p.shadow.position.z = p.g.position.z;
+  var k = 1 / (1 + y * 0.12); p.shadow.scale.set(k, k, 1); p.shadow.material.opacity = 0.35 * k;
+}
+function removeAvatar(p) { scene.remove(p.g); scene.remove(p.shadow); }
+
+/* ---------- me ---------- */
+var me = null, pos = { x: 0, y: 0, z: 0 }, vy = 0, onGround = true, rot = 0;
+var yaw = 0, pitch = 0.45, dist = 16;
+var keys = {}, playing = false;
+addEventListener('keydown', function(e) { if (!playing) return; keys[e.code] = true; if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault(); });
+addEventListener('keyup', function(e) { keys[e.code] = false; });
+addEventListener('blur', function() { keys = {}; });
+var drag = false, lx = 0, ly = 0, cv = ren.domElement;
+cv.addEventListener('pointerdown', function(e) { drag = true; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointerup', function() { drag = false; });
+cv.addEventListener('pointermove', function(e) {
+  if (!drag) return;
+  yaw -= (e.clientX - lx) * 0.006; pitch = Math.max(0.05, Math.min(1.45, pitch + (e.clientY - ly) * 0.006)); lx = e.clientX; ly = e.clientY;
+});
+cv.addEventListener('wheel', function(e) { e.preventDefault(); dist = Math.max(6, Math.min(45, dist + e.deltaY * 0.02)); }, { passive: false });
+cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+addEventListener('resize', function() { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); ren.setSize(innerWidth, innerHeight); });
+
+function stepMe(dt) {
+  var f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+  var r = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  var moving = !!(f || r);
+  if (moving) {
+    var fx = -Math.sin(yaw), fz = -Math.cos(yaw);          /* camera forward on the ground */
+    var dx = fx * f + (-fz) * r, dz = fz * f + fx * r, len = Math.hypot(dx, dz);
+    dx /= len; dz /= len;
+    pos.x += dx * WALK * dt; pos.z += dz * WALK * dt;
+    var d = Math.atan2(dx, dz) - rot; d = Math.atan2(Math.sin(d), Math.cos(d));
+    rot += d * Math.min(1, dt * 14);
+  }
+  if (keys.Space && onGround) { vy = JUMP; onGround = false; }
+  vy -= GRAV * dt; pos.y += vy * dt;
+  if (pos.y <= 0) { pos.y = 0; vy = 0; onGround = true; } else onGround = false;
+  pos.x = Math.max(-LIMIT, Math.min(LIMIT, pos.x)); pos.z = Math.max(-LIMIT, Math.min(LIMIT, pos.z));
+  me.g.position.set(pos.x, pos.y, pos.z); me.inner.rotation.y = rot;
+  animate(me, dt, moving && onGround, pos.y);
+}
+function stepCam() {
+  var tx = pos.x, ty = pos.y + 4, tz = pos.z;
+  cam.position.set(tx + dist * Math.sin(yaw) * Math.cos(pitch), Math.max(0.6, ty + dist * Math.sin(pitch)), tz + dist * Math.cos(yaw) * Math.cos(pitch));
+  cam.lookAt(tx, ty, tz);
+}
+
+/* ---------- multiplayer (Firebase Realtime Database) ---------- */
+var slot = -1, sref = null, remotes = {}, dbOK = false, sent = { x: 1e9, y: 0, z: 0, r: 0, t: 0 };
+function setStatus(t) { document.getElementById('status').textContent = t; }
+function drawList() {
+  var h = '<span class="dot" style="background:#' + COLORS[Math.max(slot, 0)].toString(16).padStart(6, '0') + '"></span><b>' + esc(me.name) + '</b> (you)';
+  Object.keys(remotes).forEach(function(i) { h += '<br><span class="dot" style="background:#' + COLORS[i].toString(16).padStart(6, '0') + '"></span>' + esc(remotes[i].name); });
+  document.getElementById('plist').innerHTML = h;
+  if (dbOK) setStatus('Online: ' + (1 + Object.keys(remotes).length) + '/' + MAX + ' players');
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+function connect(name) {
+  var fail = setTimeout(function() { if (!dbOK) setStatus('Solo mode (cant reach Realtime Database, see setup note in game.html)'); }, 8000);
+  try {
+    firebase.initializeApp(CFG);
+    var db = firebase.database();
+    var claim = function(i) {
+      if (i >= MAX) { clearTimeout(fail); setStatus('Server is full (5/5). Solo mode. Refresh to try again.'); return; }
+      db.ref('game/slots/' + i).transaction(function(cur) { return cur === null ? { n: name, x: 0, y: 0, z: 0, r: 0 } : undefined; }, function(err, ok) {
+        if (err) { clearTimeout(fail); setStatus('Solo mode (database said: ' + (err.code || err.message) + '). Check the Rules tab.'); return; }
+        if (!ok) return claim(i + 1);
+        clearTimeout(fail); slot = i; dbOK = true; sref = db.ref('game/slots/' + i); sref.onDisconnect().remove();
+        me.torso.material.color.setHex(COLORS[i]);
+        pos.x = (i - 2) * 4; pos.z = 0;                       /* spawn side by side */
+        db.ref('game/slots').on('value', function(snap) { syncRemotes(snap.val() || {}); });
+        setInterval(sendMe, 70); drawList();
+      }, false);
+    };
+    claim(0);
+  } catch (e) { clearTimeout(fail); setStatus('Solo mode (' + e.message + ')'); }
+}
+function sendMe() {
+  if (!sref) return;
+  var now = Date.now(), moved = Math.abs(pos.x - sent.x) + Math.abs(pos.y - sent.y) + Math.abs(pos.z - sent.z) + Math.abs(rot - sent.r) > 0.01;
+  if (!moved && now - sent.t < 1500) return;
+  sent = { x: pos.x, y: pos.y, z: pos.z, r: rot, t: now };
+  sref.update({ x: +pos.x.toFixed(2), y: +pos.y.toFixed(2), z: +pos.z.toFixed(2), r: +rot.toFixed(2) });
+}
+function syncRemotes(v) {
+  Object.keys(remotes).forEach(function(i) { if (!v[i] || +i === slot) { removeAvatar(remotes[i]); delete remotes[i]; } });
+  Object.keys(v).forEach(function(i) {
+    if (+i === slot || !v[i] || typeof v[i].n !== 'string') return;
+    var d = v[i], p = remotes[i];
+    if (p && p.name !== d.n) { removeAvatar(p); p = null; }
+    if (!p) { p = remotes[i] = makeAvatar(d.n.slice(0, 16), COLORS[i]); p.g.position.set(d.x || 0, d.y || 0, d.z || 0); p.rot = d.r || 0; }
+    p.tx = d.x || 0; p.ty = d.y || 0; p.tz = d.z || 0; p.tr = d.r || 0;
+  });
+  drawList();
+}
+function stepRemotes(dt) {
+  var k = 1 - Math.exp(-dt * 14);
+  Object.keys(remotes).forEach(function(i) {
+    var p = remotes[i], g = p.g.position, ox = g.x, oz = g.z;
+    g.x += (p.tx - g.x) * k; g.y += (p.ty - g.y) * k; g.z += (p.tz - g.z) * k;
+    var d = Math.atan2(Math.sin(p.tr - p.rot), Math.cos(p.tr - p.rot)); p.rot += d * k; p.inner.rotation.y = p.rot;
+    animate(p, dt, Math.hypot(g.x - ox, g.z - oz) / dt > 2 && g.y < 0.3, g.y);
+  });
+}
+addEventListener('beforeunload', function() { if (sref) sref.remove(); });
+
+/* ---------- join + main loop ---------- */
+function join() {
+  var n = document.getElementById('nm').value.trim().replace(/\s+/g, ' ').slice(0, 16);
+  if (!n) { document.getElementById('nm').focus(); return; }
+  try { localStorage.setItem('bb_game_name', n); } catch (e) {}
+  document.getElementById('join').style.display = 'none';
+  document.getElementById('hud').style.display = 'block';
+  me = makeAvatar(n, COLORS[0]); playing = true; setStatus('Connecting...'); drawList(); connect(n);
+}
+document.getElementById('go').onclick = join;
+document.getElementById('nm').addEventListener('keydown', function(e) { if (e.key === 'Enter') join(); });
+try { document.getElementById('nm').value = localStorage.getItem('bb_game_name') || ''; } catch (e) {}
+document.getElementById('nm').focus();
+
+var last = performance.now();
+(function loop(t) {
+  requestAnimationFrame(loop);
+  var dt = Math.min(0.05, (t - last) / 1000); last = t;
+  if (me) { stepMe(dt); stepRemotes(dt); }
+  stepCam(); ren.render(scene, cam);
+})(last);
+</script>
+</body>
+</html>
