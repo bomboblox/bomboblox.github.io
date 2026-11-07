@@ -20,11 +20,36 @@ canvas{display:block}
 #join button{height:38px;background:#ff6a00;color:#111;border:0;font-weight:700;font-size:16px;cursor:pointer}
 #join button:hover{background:#e05a00}
 #join p{margin:0;font-size:12px;color:#999}
+#hud{padding:6px 10px;min-width:0}
+#menubtn{height:30px;padding:0 16px;background:#ff6a00;color:#111;border:0;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:4px}
+#menubtn:hover{background:#e05a00}
+.dot{display:inline-block;width:10px;height:10px;margin-right:6px}
+#menu{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:6}
+#menu .mbox{background:#1e1e1e;border:1px solid #ff6a00;padding:20px;width:300px;display:flex;flex-direction:column;gap:10px}
+#menu h2{margin:0;font-size:22px;color:#ff6a00}
+#menu .hint{color:#aaa;font-size:12px;line-height:1.5}
+#menu button{height:36px;border:0;font-weight:700;font-size:15px;cursor:pointer;background:#333;color:#f1f1f1}
+#menu button:hover{background:#444}#menu button.pri{background:#ff6a00;color:#111}#menu button.pri:hover{background:#e05a00}#menu button.red{color:#ff5a5a}
+#plist{font-size:14px;line-height:1.6;max-height:150px;overflow:auto}
+#chat{position:fixed;left:10px;bottom:10px;width:340px;max-width:calc(100vw - 20px);display:none}
+#clog{height:150px;overflow-y:auto;background:rgba(17,17,17,.6);padding:6px 8px;font-size:13px;line-height:1.45;word-break:break-word}
+#cin{width:100%;box-sizing:border-box;height:30px;background:rgba(17,17,17,.9);border:1px solid #333;color:#f1f1f1;padding:0 8px;font-size:13px;outline:none}
+#cin:focus{border-color:#ff6a00}
 </style>
 </head>
 <body>
-<div id="hud"><h1>Bomboblox Test Place</h1><div id="status">Starting...</div><div id="mapinfo" style="color:#999;font-size:12px"></div><div id="plist"></div>
-<div class="hint">WASD / arrows: move<br>Space: jump<br>Hold mouse + drag: look<br>Scroll: zoom</div></div>
+<div id="hud"><button id="menubtn" type="button">Menu</button><div id="status">Starting...</div><div id="mapinfo" style="color:#999;font-size:12px"></div></div>
+
+<div id="chat"><div id="clog"></div><input id="cin" maxlength="100" placeholder="Press Enter or / to chat" autocomplete="off"></div>
+
+<div id="menu"><div class="mbox">
+  <h2>Menu</h2>
+  <div id="plist"></div>
+  <div class="hint">WASD / arrows: move &middot; Space: jump<br>Hold mouse + drag: look &middot; Scroll: zoom<br>Enter or /: chat &middot; Esc: menu</div>
+  <button id="mres" class="pri" type="button">Resume</button>
+  <button id="mreset" type="button">Reset character</button>
+  <button id="mleave" class="red" type="button">Leave game</button>
+</div></div>
 
 <div id="join"><div class="box">
   <h2>Enter ur name</h2>
@@ -103,7 +128,15 @@ function removeAvatar(p) { scene.remove(p.g); scene.remove(p.shadow); }
 var me = null, pos = { x: 0, y: 0, z: 0 }, vy = 0, onGround = true, rot = 0;
 var yaw = 0, pitch = 0.45, dist = 16;
 var keys = {}, playing = false;
-addEventListener('keydown', function(e) { if (!playing) return; keys[e.code] = true; if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault(); });
+var typing = false, menuOpen = false;
+addEventListener('keydown', function(e) {
+  if (!playing) return;
+  if (e.code === 'Escape') { e.preventDefault(); if (typing) document.getElementById('cin').blur(); else toggleMenu(); return; }
+  if (typing) return;
+  if (!menuOpen && (e.code === 'Enter' || e.key === '/')) { e.preventDefault(); document.getElementById('cin').focus(); return; }
+  if (menuOpen) return;
+  keys[e.code] = true; if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault();
+});
 addEventListener('keyup', function(e) { keys[e.code] = false; });
 addEventListener('blur', function() { keys = {}; });
 var drag = false, lx = 0, ly = 0, cv = ren.domElement;
@@ -138,9 +171,24 @@ function stepMe(dt) {
   me.g.position.set(pos.x, pos.y, pos.z); me.inner.rotation.y = rot;
   animate(me, dt, moving && onGround, pos.y);
 }
-function stepCam() {
+var camD = 16;
+function rayBox(c, ox, oy, oz, dx, dy, dz) {      /* distance along the ray to where it enters this part, or Infinity */
+  var cy = (c.bot + c.top) / 2, rx = ox - c.x, rz = oz - c.z;
+  var o = [c.cs * rx - c.sn * rz, oy - cy, c.sn * rx + c.cs * rz], d = [c.cs * dx - c.sn * dz, dy, c.sn * dx + c.cs * dz], h = [c.hx, (c.top - c.bot) / 2, c.hz];
+  var tmin = -Infinity, tmax = Infinity;
+  for (var a = 0; a < 3; a++) {
+    if (Math.abs(d[a]) < 1e-9) { if (Math.abs(o[a]) > h[a]) return Infinity; }
+    else { var t1 = (-h[a] - o[a]) / d[a], t2 = (h[a] - o[a]) / d[a]; if (t1 > t2) { var q = t1; t1 = t2; t2 = q; } if (t1 > tmin) tmin = t1; if (t2 < tmax) tmax = t2; if (tmin > tmax) return Infinity; }
+  }
+  return tmin >= 0 ? tmin : Infinity;
+}
+function stepCam(dt) {
   var tx = pos.x, ty = pos.y + 4, tz = pos.z;
-  cam.position.set(tx + dist * Math.sin(yaw) * Math.cos(pitch), Math.max(0.6, ty + dist * Math.sin(pitch)), tz + dist * Math.cos(yaw) * Math.cos(pitch));
+  var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch), allowed = dist;
+  if (hasMap) for (var i = 0; i < colliders.length; i++) { var t = rayBox(colliders[i], tx, ty, tz, dx, dy, dz); if (t < allowed) allowed = t; }
+  allowed = Math.max(1.2, allowed - 0.5);                          /* stop just in front of the wall */
+  if (allowed < camD) camD = allowed; else camD += (allowed - camD) * Math.min(1, (dt || 0.016) * 6);
+  cam.position.set(tx + dx * camD, Math.max(0.6, ty + dy * camD), tz + dz * camD);
   cam.lookAt(tx, ty, tz);
 }
 
@@ -168,7 +216,7 @@ function connect(name) {
         clearTimeout(fail); slot = i; dbOK = true; sref = db.ref('game/slots/' + i); sref.onDisconnect().remove();
         me.torso.material.color.setHex(COLORS[i]);
         pos.x += (i - 2) * 3;                                   /* spawn side by side */
-        db.ref('game/slots').on('value', function(snap) { syncRemotes(snap.val() || {}); });
+        db.ref('game/slots').on('value', function(snap) { syncRemotes(snap.val() || {}); }); startChat(db);
         setInterval(sendMe, 70); drawList();
       }, false);
     };
@@ -322,13 +370,76 @@ function vertical(py) {
   if (vy <= 0 && pos.y <= ground) { pos.y = ground; vy = 0; onGround = true; } else onGround = false;
 }
 
+/* ---------- menu ---------- */
+function toggleMenu() {
+  menuOpen = !menuOpen; keys = {};
+  document.getElementById('menu').style.display = menuOpen ? 'flex' : 'none';
+}
+function leave() {
+  var go = function() { location.href = 'index.html'; };
+  if (sref) { sref.remove().then(go, go); setTimeout(go, 1000); } else go();
+}
+document.getElementById('menubtn').onclick = toggleMenu;
+document.getElementById('mres').onclick = toggleMenu;
+document.getElementById('mreset').onclick = function() { respawn(); toggleMenu(); };
+document.getElementById('mleave').onclick = leave;
+
+/* ---------- chat (bubbles + history panel), shared through game/chat in the Realtime Database ---------- */
+var CHATCOL = ['#ff6b66', '#5bb5ff', '#6fdc6f', '#ffe14d', '#d27cf0'], chatReady = true, chatRef = null, lastChat = 0;
+function bubbleSprite(text) {
+  var c = document.createElement('canvas'), x = c.getContext('2d'), F = 'bold 26px Arial';
+  x.font = F; var words = text.replace(/(\S{16})/g, '$1 ').split(' '), lines = [], cur = '';
+  words.forEach(function(w) { var t = cur ? cur + ' ' + w : w; if (x.measureText(t).width > 300 && cur) { lines.push(cur); cur = w; } else cur = t; });
+  lines.push(cur); lines = lines.slice(0, 4);
+  var wm = 0; lines.forEach(function(l) { wm = Math.max(wm, x.measureText(l).width); });
+  var W = Math.ceil(wm) + 28, H = lines.length * 32 + 22, T = 14; c.width = W; c.height = H + T; x = c.getContext('2d'); x.font = F;
+  x.fillStyle = '#fff'; x.strokeStyle = 'rgba(0,0,0,.6)'; x.lineWidth = 3; x.beginPath();
+  var r = 10; x.moveTo(r, 2); x.arcTo(W - 2, 2, W - 2, H, r); x.arcTo(W - 2, H, W / 2 + 10, H, r); x.lineTo(W / 2 + 10, H); x.lineTo(W / 2, H + T - 2); x.lineTo(W / 2 - 10, H); x.arcTo(2, H, 2, 2, r); x.arcTo(2, 2, W - 2, 2, r); x.closePath(); x.fill(); x.stroke();
+  x.fillStyle = '#111'; x.textBaseline = 'middle'; lines.forEach(function(l, i) { x.fillText(l, 14, 11 + 16 + i * 32); });
+  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
+  s.scale.set(W / 40, (H + T) / 40, 1); s.center.set(0.5, 0); s.position.set(0, 7.4, 0); s.renderOrder = 11; return s;
+}
+function clearBubble(p) { if (p.bub) { p.g.remove(p.bub); p.bub.material.map.dispose(); p.bub.material.dispose(); p.bub = null; } }
+function setBubble(p, text) { clearBubble(p); p.bub = bubbleSprite(text); p.bubUntil = Date.now() + 7000; p.g.add(p.bub); }
+function updateBubbles() {
+  var now = Date.now(), list = me ? [me] : [];
+  Object.keys(remotes).forEach(function(i) { list.push(remotes[i]); });
+  list.forEach(function(p) { if (p.bub && now > p.bubUntil) clearBubble(p); });
+}
+function onChat(m, bubble) {
+  var log = document.getElementById('clog'), near = log.scrollHeight - log.scrollTop - log.clientHeight < 40, d = document.createElement('div');
+  d.innerHTML = '<b style="color:' + (CHATCOL[m.s] || '#ff6a00') + '">' + esc(m.n) + '</b>: ' + esc(m.t);
+  log.appendChild(d); while (log.childNodes.length > 120) log.removeChild(log.firstChild);
+  if (near) log.scrollTop = log.scrollHeight;
+  if (bubble) { var p = (m.s === slot) ? me : remotes[m.s]; if (p) setBubble(p, m.t); }
+}
+function sendChat(text) {
+  text = text.replace(/\s+/g, ' ').trim().slice(0, 100);
+  if (!text || Date.now() - lastChat < 800) return; lastChat = Date.now();
+  var m = { n: me.name, s: slot, t: text };
+  if (chatRef && dbOK) chatRef.push({ n: m.n, s: m.s, t: m.t, at: firebase.database.ServerValue.TIMESTAMP }).catch(function() { onChat(m, true); });
+  else onChat(m, true);                                              /* solo mode: only you see it */
+}
+function startChat(db) {
+  chatRef = db.ref('game/chat'); chatReady = false; var q = chatRef.limitToLast(50);
+  q.on('child_added', function(sn) {
+    var m = sn.val(); if (!m || typeof m.t !== 'string') return;
+    onChat({ n: String(m.n || '?').slice(0, 16), s: typeof m.s === 'number' ? m.s : -1, t: m.t.slice(0, 100) }, chatReady);
+  });
+  q.once('value', function() { chatReady = true; });
+}
+var cin = document.getElementById('cin');
+cin.addEventListener('focus', function() { typing = true; keys = {}; });
+cin.addEventListener('blur', function() { typing = false; });
+cin.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.stopPropagation(); sendChat(cin.value); cin.value = ''; cin.blur(); } });
+
 /* ---------- join + main loop ---------- */
 function join() {
   var n = document.getElementById('nm').value.trim().replace(/\s+/g, ' ').slice(0, 16);
   if (!n) { document.getElementById('nm').focus(); return; }
   try { localStorage.setItem('bb_game_name', n); } catch (e) {}
   document.getElementById('join').style.display = 'none';
-  document.getElementById('hud').style.display = 'block';
+  document.getElementById('hud').style.display = 'block'; document.getElementById('chat').style.display = 'block';
   setStatus('Loading map...');
   mapReady.then(function() { me = makeAvatar(n, COLORS[0]); respawn(); playing = true; setStatus('Connecting...'); drawList(); connect(n); });
 }
@@ -342,7 +453,7 @@ var last = performance.now();
   requestAnimationFrame(loop);
   var dt = Math.min(0.05, (t - last) / 1000); last = t;
   if (me) { stepMe(dt); stepRemotes(dt); }
-  stepCam(); ren.render(scene, cam);
+  stepCam(dt); updateBubbles(); ren.render(scene, cam);
 })(last);
 </script>
 </body>
