@@ -205,8 +205,8 @@ function stepRemotes(dt) {
 addEventListener('beforeunload', function() { if (sref) sref.remove(); });
 
 /* ---------- map import (map.json from BomboExport.lua) ---------- */
-/* materials: 0 Fabric, 1 Foil, 2 Grass, 3 Wood, 4 Slate, 5 Brick, 6 anything else (grey). Textures are drawn in code, 4 studs per tile. */
-var TILE = 4, colliders = [], hasMap = false, spawn = [0, 0, 0], PR = 0.9, PH = 5, STEP = 1.0, MATS3 = [];
+/* materials: 0 Fabric, 1 Foil, 2 Grass, 3 Wood, 4 Slate, 5 Brick, 6 anything else (grey). Textures are drawn in code, 8 studs per tile. */
+var TILE = 8, colliders = [], hasMap = false, spawn = [0, 0, 0], PR = 0.9, PH = 5, STEP = 1.0, MATS3 = [];
 function rnd(a, b) { return a + Math.random() * (b - a); }
 function mkTex(fn) {
   var c = document.createElement('canvas'); c.width = c.height = 128; var x = c.getContext('2d'); fn(x);
