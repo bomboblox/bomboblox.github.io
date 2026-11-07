@@ -90,19 +90,32 @@ var MAX = 5, COLORS = [0xe53935, 0x1e88e5, 0x43a047, 0xfdd835, 0x8e24aa];
 var WALK = 16, JUMP = 53.15, GRAV = 196.2, LIMIT = 250;   /* roblox-like: 16 studs/s, jump height 7.2 studs */
 
 /* ---------- scene ---------- */
+function lin(h) { return new THREE.Color(h).convertSRGBToLinear(); }          /* colors written as normal hex -> correct linear colors */
+function ctex(c) { var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; }
 var scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87b8ea);
-scene.fog = new THREE.Fog(0x87b8ea, 160, 420);
+scene.background = lin(0xd6e8f6);
+scene.fog = new THREE.Fog(lin(0xd6e8f6), 170, 460);
 var cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 1000);
 var ren = new THREE.WebGLRenderer({ antialias: true });
 ren.setPixelRatio(Math.min(devicePixelRatio, 2));
+ren.outputEncoding = THREE.sRGBEncoding;
+ren.shadowMap.enabled = true; ren.shadowMap.type = THREE.PCFSoftShadowMap;
 ren.setSize(innerWidth, innerHeight);
 document.body.appendChild(ren.domElement);
-scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-var sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(50, 100, 30); scene.add(sun);
-var base = new THREE.Mesh(new THREE.PlaneGeometry(512, 512), new THREE.MeshLambertMaterial({ color: 0x8d8d8d }));
-base.rotation.x = -Math.PI / 2; scene.add(base);
-var grid = new THREE.GridHelper(512, 128, 0x7a7a7a, 0x7a7a7a); grid.position.y = 0.02; scene.add(grid);   /* 1 square = 4 studs */
+scene.add(new THREE.HemisphereLight(lin(0xbfdcff), lin(0x75705f), 0.5));                    /* sky light from above, warm bounce from below */
+var sun = new THREE.DirectionalLight(lin(0xfff1d6), 0.85); sun.position.set(60, 100, 40); scene.add(sun); scene.add(sun.target);
+sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.35;
+var sc = sun.shadow.camera; sc.left = -45; sc.right = 45; sc.top = 45; sc.bottom = -45; sc.near = 1; sc.far = 320;   /* shadow box follows the player */
+var fill = new THREE.DirectionalLight(lin(0xaec8ff), 0.22); fill.position.set(-50, 40, -60); scene.add(fill);
+var sky = (function() {                                                                       /* sky dome: deep blue on top, pale at the horizon */
+  var c = document.createElement('canvas'); c.width = 2; c.height = 256; var x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 256);
+  g.addColorStop(0, '#3a74cc'); g.addColorStop(0.28, '#6aa5e6'); g.addColorStop(0.5, '#d6e8f6'); g.addColorStop(1, '#d6e8f6'); x.fillStyle = g; x.fillRect(0, 0, 2, 256);
+  var m = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 16), new THREE.MeshBasicMaterial({ map: ctex(c), side: THREE.BackSide, fog: false, depthWrite: false }));
+  m.renderOrder = -1; scene.add(m); return m;
+})();
+var base = new THREE.Mesh(new THREE.PlaneGeometry(512, 512), new THREE.MeshLambertMaterial({ color: lin(0x8d8d8d) }));
+base.rotation.x = -Math.PI / 2; base.receiveShadow = true; scene.add(base);
+var grid = new THREE.GridHelper(512, 128, lin(0x7a7a7a), lin(0x7a7a7a)); grid.position.y = 0.02; scene.add(grid);   /* 1 square = 4 studs */
 
 /* ---------- blocky avatar (roblox proportions: legs 2, torso 2, head ~1, arms 2) ---------- */
 function box(w, h, d, c, x, y, z) {
@@ -113,20 +126,60 @@ function nameTag(name) {
   var c = document.createElement('canvas'); c.width = 256; c.height = 64;
   var x = c.getContext('2d'); x.font = 'bold 30px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,.85)'; x.strokeText(name, 128, 32); x.fillStyle = '#fff'; x.fillText(name, 128, 32);
-  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: true, depthWrite: false, transparent: true }));
+  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: ctex(c), depthTest: true, depthWrite: false, transparent: true }));
   s.scale.set(5, 1.25, 1); s.position.set(0, 6.7, 0); s.renderOrder = 10; return s;
+}
+var GEOS = {}, HEADG = null, FACE = null;
+function bevelGeo(w, h, d, r) {                    /* a box whose edges and corners are beveled by r */
+  var key = [w, h, d, r].join('_'); if (GEOS[key]) return GEOS[key];
+  var g = new THREE.BoxGeometry(w, h, d, 4, 4, 4), p = g.attributes.position, H = [w / 2, h / 2, d / 2];
+  function remap(t, half) { var u = Math.abs(t) / half, sg = t < 0 ? -1 : 1; return u > 0.99 ? sg * half : u > 0.4 ? sg * (half - r) : 0; }
+  for (var i = 0; i < p.count; i++) {
+    var P = [remap(p.getX(i), H[0]), remap(p.getY(i), H[1]), remap(p.getZ(i), H[2])], C = [], n = [], L = 0, a;
+    for (a = 0; a < 3; a++) { C[a] = Math.max(-(H[a] - r), Math.min(H[a] - r, P[a])); n[a] = P[a] - C[a]; L += n[a] * n[a]; }
+    if (L > 1e-12) { L = Math.sqrt(L); for (a = 0; a < 3; a++) P[a] = C[a] + n[a] / L * r; }
+    p.setXYZ(i, P[0], P[1], P[2]);
+  }
+  g.computeVertexNormals(); return (GEOS[key] = g);
+}
+function bbox(w, h, d, c, x, y, z) {
+  var m = new THREE.Mesh(bevelGeo(w, h, d, 0.16), new THREE.MeshStandardMaterial({ color: lin(c), roughness: 0.8, metalness: 0 }));
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; return m;
+}
+function headGeo() {                                /* roblox head: a short cylinder with a rounded top and a small bevel underneath */
+  if (HEADG) return HEADG;
+  var R = 0.62, Hh = 1.2, t = 0.22, b = 0.08, pts = [new THREE.Vector2(0, -Hh / 2)], i, a;
+  for (i = 0; i <= 4; i++) { a = i / 4 * Math.PI / 2; pts.push(new THREE.Vector2(R - b + Math.sin(a) * b, -Hh / 2 + b - Math.cos(a) * b)); }
+  for (i = 0; i <= 8; i++) { a = i / 8 * Math.PI / 2; pts.push(new THREE.Vector2(R - t + Math.cos(a) * t, Hh / 2 - t + Math.sin(a) * t)); }
+  pts.push(new THREE.Vector2(0, Hh / 2));
+  return (HEADG = new THREE.LatheGeometry(pts, 32));
+}
+function makeHead() {
+  var g = new THREE.Group(), R = 0.62, fh = 0.9, fy = -0.07;     /* the face lives on the straight part of the head */
+  var head = new THREE.Mesh(headGeo(), new THREE.MeshStandardMaterial({ color: lin(0xf5cd30), roughness: 0.7, metalness: 0 }));
+  head.castShadow = true; head.receiveShadow = true; g.add(head);
+  if (FACE) {                                                   /* bomboface.png wrapped around the front of the head */
+    var asp = FACE.image && FACE.image.height ? FACE.image.width / FACE.image.height : 1, th = Math.min(2.2, fh * asp / R);
+    var fm = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.006, R + 0.006, fh, 32, 1, true, -th / 2, th), new THREE.MeshLambertMaterial({ map: FACE, transparent: true }));
+    fm.position.y = fy; g.add(fm);
+  } else {                                                      /* no bomboface.png found: simple face */
+    var dk = new THREE.MeshBasicMaterial({ color: lin(0x111111) });
+    [[-0.26, 0.1, 0.18, 0.25], [0.26, 0.1, 0.18, 0.25], [0, -0.22, 0.4, 0.08]].forEach(function(f) {
+      var m = new THREE.Mesh(new THREE.BoxGeometry(f[2], f[3], 0.05), dk); m.position.set(f[0], f[1], Math.sqrt(R * R - f[0] * f[0]) + 0.01); g.add(m);
+    });
+  }
+  g.position.y = 4.6; return g;
 }
 function makeAvatar(name, color) {
   var g = new THREE.Group(), inner = new THREE.Group(); g.add(inner);
-  var torso = box(2, 2, 1, color, 0, 3, 0); inner.add(torso);
-  inner.add(box(1.2, 1.2, 1.2, 0xf5cd30, 0, 4.6, 0));
-  inner.add(box(0.18, 0.25, 0.05, 0x111111, -0.28, 4.7, 0.62), box(0.18, 0.25, 0.05, 0x111111, 0.28, 4.7, 0.62), box(0.6, 0.1, 0.05, 0x111111, 0, 4.3, 0.62));
-  function limb(c, x, y) { var p = new THREE.Group(); p.position.set(x, y, 0); p.add(box(1, 2, 1, c, 0, -1, 0)); inner.add(p); return p; }
+  var torso = bbox(2, 2, 1, color, 0, 3, 0); inner.add(torso);
+  inner.add(makeHead());
+  function limb(c, x, y) { var p = new THREE.Group(); p.position.set(x, y, 0); p.add(bbox(1, 2, 1, c, 0, -1, 0)); inner.add(p); return p; }
   var p = { g: g, inner: inner, torso: torso, aL: limb(0xf5cd30, -1.5, 4), aR: limb(0xf5cd30, 1.5, 4), lL: limb(0xa3c76d, -0.5, 2), lR: limb(0xa3c76d, 0.5, 2), amp: 0, ph: 0, name: name };
   g.add(nameTag(name));
   p.shadow = new THREE.Mesh(new THREE.CircleGeometry(1.3, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
   p.shadow.rotation.x = -Math.PI / 2; p.shadow.position.y = 0.04;
-  scene.add(g); scene.add(p.shadow); return p;
+  p.shadow.visible = false; scene.add(g); scene.add(p.shadow); return p;
 }
 function animate(p, dt, moving, y) {
   p.amp += ((moving ? 0.9 : 0) - p.amp) * Math.min(1, dt * 12);
@@ -212,6 +265,7 @@ function stepCam(dt) {
   if (allowed < camD) camD = allowed; else camD += (allowed - camD) * Math.min(1, (dt || 0.016) * 6);
   cam.position.set(tx + dx * camD, Math.max(0.6, ty + dy * camD), tz + dz * camD);
   cam.lookAt(tx, ty, tz);
+  sun.position.set(tx + 60, ty + 100, tz + 40); sun.target.position.set(tx, ty - 4, tz); sky.position.copy(cam.position);
 }
 
 /* ---------- multiplayer (Firebase Realtime Database) ---------- */
@@ -236,7 +290,7 @@ function connect(name) {
         if (err) { clearTimeout(fail); setStatus('Solo mode (database said: ' + (err.code || err.message) + '). Check the Rules tab.'); return; }
         if (!ok) return claim(i + 1);
         clearTimeout(fail); slot = i; dbOK = true; sref = db.ref('game/slots/' + i); sref.onDisconnect().remove();
-        me.torso.material.color.setHex(COLORS[i]);
+        me.torso.material.color.copy(lin(COLORS[i]));
         pos.x += (i - 2) * 3;                                   /* spawn side by side */
         db.ref('game/slots').on('value', function(snap) { syncRemotes(snap.val() || {}); }); startChat(db);
         setInterval(sendMe, 70); drawList();
@@ -280,7 +334,7 @@ var TILE = 8, colliders = [], hasMap = false, spawn = [0, 0, 0], PR = 0.9, PH = 
 function rnd(a, b) { return a + Math.random() * (b - a); }
 function mkTex(fn) {
   var c = document.createElement('canvas'); c.width = c.height = 128; var x = c.getContext('2d'); fn(x);
-  var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t;
+  var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; t.encoding = THREE.sRGBEncoding; return t;
 }
 var TEXFN = [
   function(x) { x.fillStyle = '#cdbfa6'; x.fillRect(0, 0, 128, 128); for (var i = 0; i < 128; i += 4) { x.fillStyle = 'rgba(0,0,0,.14)'; x.fillRect(i, 0, 2, 128); x.fillRect(0, i, 128, 2); } for (i = 0; i < 300; i++) { x.fillStyle = 'rgba(255,255,255,.1)'; x.fillRect(rnd(0, 126), rnd(0, 126), 2, 2); } },
@@ -292,16 +346,21 @@ var TEXFN = [
 ];
 /* texture images in the repo root: fabric.png foil.png grass.png wood.png slate.png brick.png (one tile = TILE studs). Missing ones use the built-in look. */
 var IMG = ['fabric', 'foil', 'grass', 'wood', 'slate', 'brick'], TEXS = [], LOADED = [];
+function loadFace() {
+  return new Promise(function(res) {
+    new THREE.TextureLoader().load('bomboface.png?v=' + Date.now(), function(t) { t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; FACE = t; LOADED.push('bomboface.png'); res(); }, undefined, function() { res(); });
+  });
+}
 function loadTextures() {
   return Promise.all(IMG.map(function(n, i) {
     return new Promise(function(res) {
-      new THREE.TextureLoader().load(n + '.png?v=' + Date.now(), function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; TEXS[i] = t; LOADED.push(n + '.png'); res(); }, undefined, function() { res(); });
+      new THREE.TextureLoader().load(n + '.png?v=' + Date.now(), function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; t.encoding = THREE.sRGBEncoding; TEXS[i] = t; LOADED.push(n + '.png'); res(); }, undefined, function() { res(); });
     });
-  }));
+  }).concat([loadFace()]));
 }
 function getMat(i, transp) {
   if (!MATS3[i]) {
-    if (i === 6) MATS3[i] = new THREE.MeshLambertMaterial({ color: 0xa3a2a5 });
+    if (i === 6) MATS3[i] = new THREE.MeshLambertMaterial({ color: lin(0xa3a2a5) });
     else {
       var t = TEXS[i] || mkTex(TEXFN[i]);
       MATS3[i] = i === 1 ? new THREE.MeshPhongMaterial({ map: t, shininess: 90, specular: 0xffffff }) : new THREE.MeshLambertMaterial({ map: t });
@@ -348,7 +407,7 @@ function buildMap(data) {
     else if (shape === 3) geo = wedgeGeo(sx, sy, sz);
     else geo = boxGeo(sx, sy, sz);
     if (shape === 1 || shape === 2) scaleUV(geo, Math.max(sx, sy, sz) / TILE * 1.5);
-    var m = new THREE.Mesh(geo, getMat(mat, tr)); m.matrixAutoUpdate = false;
+    var m = new THREE.Mesh(geo, getMat(mat, tr)); m.matrixAutoUpdate = false; m.castShadow = tr < 0.5; m.receiveShadow = true;
     m.matrix.set(R ? R[0] : 1, R ? R[1] : 0, R ? R[2] : 0, x, R ? R[3] : 0, R ? R[4] : 1, R ? R[5] : 0, y, R ? R[6] : 0, R ? R[7] : 0, R ? R[8] : 1, z, 0, 0, 0, 1);
     m.updateMatrixWorld(true); grp.add(m);
   });
@@ -418,7 +477,7 @@ function bubbleSprite(text) {
   x.fillStyle = '#fff'; x.strokeStyle = 'rgba(0,0,0,.6)'; x.lineWidth = 3; x.beginPath();
   var r = 10; x.moveTo(r, 2); x.arcTo(W - 2, 2, W - 2, H, r); x.arcTo(W - 2, H, W / 2 + 10, H, r); x.lineTo(W / 2 + 10, H); x.lineTo(W / 2, H + T - 2); x.lineTo(W / 2 - 10, H); x.arcTo(2, H, 2, 2, r); x.arcTo(2, 2, W - 2, 2, r); x.closePath(); x.fill(); x.stroke();
   x.fillStyle = '#111'; x.textBaseline = 'middle'; lines.forEach(function(l, i) { x.fillText(l, 14, 11 + 16 + i * 32); });
-  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: true, depthWrite: false, transparent: true }));
+  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: ctex(c), depthTest: true, depthWrite: false, transparent: true }));
   s.scale.set(W / 40, (H + T) / 40, 1); s.center.set(0.5, 0); s.position.set(0, 7.4, 0); s.renderOrder = 11; return s;
 }
 function clearBubble(p) { if (p.bub) { p.g.remove(p.bub); p.bub.material.map.dispose(); p.bub.material.dispose(); p.bub = null; } }
