@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Bomboblox Test Place</title>
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:Arial,Helvetica,sans-serif;color:#f1f1f1}
@@ -35,6 +35,18 @@ canvas{display:block}
 #clog{height:150px;overflow-y:auto;background:rgba(17,17,17,.6);padding:6px 8px;font-size:13px;line-height:1.45;word-break:break-word}
 #cin{width:100%;box-sizing:border-box;height:30px;background:rgba(17,17,17,.9);border:1px solid #333;color:#f1f1f1;padding:0 8px;font-size:13px;outline:none}
 #cin:focus{border-color:#ff6a00}
+html,body{touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+canvas{touch-action:none}
+#cin{-webkit-user-select:text;user-select:text}
+#touchui{display:none}
+body.touch.playing #touchui{display:block}
+#joy{position:fixed;left:calc(28px + env(safe-area-inset-left));bottom:calc(28px + env(safe-area-inset-bottom));width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);touch-action:none;z-index:4}
+#knob{position:absolute;left:35px;top:35px;width:60px;height:60px;border-radius:50%;background:rgba(255,106,0,.85);pointer-events:none}
+#jbtn{position:fixed;right:calc(32px + env(safe-area-inset-right));bottom:calc(44px + env(safe-area-inset-bottom));width:90px;height:90px;border-radius:50%;background:rgba(255,106,0,.8);color:#111;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center;touch-action:none;z-index:4;border:2px solid rgba(255,255,255,.5)}
+#jbtn.on{background:#fff}
+body.touch #chat{top:92px;bottom:auto;width:260px}
+body.touch #clog{height:100px}
+@media(max-height:480px){body.touch #clog{height:56px}}
 </style>
 </head>
 <body>
@@ -50,6 +62,8 @@ canvas{display:block}
   <button id="mreset" type="button">Reset character</button>
   <button id="mleave" class="red" type="button">Leave game</button>
 </div></div>
+
+<div id="touchui"><div id="joy"><div id="knob"></div></div><div id="jbtn">JUMP</div></div>
 
 <div id="join"><div class="box">
   <h2>Enter ur name</h2>
@@ -99,7 +113,7 @@ function nameTag(name) {
   var c = document.createElement('canvas'); c.width = 256; c.height = 64;
   var x = c.getContext('2d'); x.font = 'bold 30px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,.85)'; x.strokeText(name, 128, 32); x.fillStyle = '#fff'; x.fillText(name, 128, 32);
-  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
+  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: true, depthWrite: false, transparent: true }));
   s.scale.set(5, 1.25, 1); s.position.set(0, 6.7, 0); s.renderOrder = 10; return s;
 }
 function makeAvatar(name, color) {
@@ -139,12 +153,19 @@ addEventListener('keydown', function(e) {
 });
 addEventListener('keyup', function(e) { keys[e.code] = false; });
 addEventListener('blur', function() { keys = {}; });
-var drag = false, lx = 0, ly = 0, cv = ren.domElement;
-cv.addEventListener('pointerdown', function(e) { drag = true; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(e.pointerId); });
-cv.addEventListener('pointerup', function() { drag = false; });
+var ptrs = {}, lastPinch = 0, cv = ren.domElement;
+cv.addEventListener('pointerdown', function(e) { ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; lastPinch = 0; try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
+function pEnd(e) { delete ptrs[e.pointerId]; lastPinch = 0; }
+cv.addEventListener('pointerup', pEnd); cv.addEventListener('pointercancel', pEnd);
 cv.addEventListener('pointermove', function(e) {
-  if (!drag) return;
-  yaw -= (e.clientX - lx) * 0.006; pitch = Math.max(0.05, Math.min(1.45, pitch + (e.clientY - ly) * 0.006)); lx = e.clientX; ly = e.clientY;
+  var p = ptrs[e.pointerId]; if (!p) return;
+  var ids = Object.keys(ptrs);
+  if (ids.length >= 2) {                                     /* two fingers: pinch to zoom */
+    p.x = e.clientX; p.y = e.clientY; var a = ptrs[ids[0]], b = ptrs[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (lastPinch) dist = Math.max(6, Math.min(45, dist - (d - lastPinch) * 0.06)); lastPinch = d; return;
+  }
+  var k = e.pointerType === 'touch' ? 0.009 : 0.006;
+  yaw -= (e.clientX - p.x) * k; pitch = Math.max(0.05, Math.min(1.45, pitch + (e.clientY - p.y) * k)); p.x = e.clientX; p.y = e.clientY;
 });
 cv.addEventListener('wheel', function(e) { e.preventDefault(); dist = Math.max(6, Math.min(45, dist + e.deltaY * 0.02)); }, { passive: false });
 cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
@@ -153,12 +174,13 @@ addEventListener('resize', function() { cam.aspect = innerWidth / innerHeight; c
 function stepMe(dt) {
   var f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
   var r = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
-  var moving = !!(f || r);
+  f += joy.f; r += joy.r;
+  var mag = Math.min(1, Math.hypot(f, r)), moving = mag > 0.12;
   if (moving) {
     var fx = -Math.sin(yaw), fz = -Math.cos(yaw);          /* camera forward on the ground */
     var dx = fx * f + (-fz) * r, dz = fz * f + fx * r, len = Math.hypot(dx, dz);
     dx /= len; dz /= len;
-    pos.x += dx * WALK * dt; pos.z += dz * WALK * dt;
+    pos.x += dx * WALK * mag * dt; pos.z += dz * WALK * mag * dt;
     var d = Math.atan2(dx, dz) - rot; d = Math.atan2(Math.sin(d), Math.cos(d));
     rot += d * Math.min(1, dt * 14);
   }
@@ -372,7 +394,7 @@ function vertical(py) {
 
 /* ---------- menu ---------- */
 function toggleMenu() {
-  menuOpen = !menuOpen; keys = {};
+  menuOpen = !menuOpen; keys = {}; joyEnd(); jbEnd();
   document.getElementById('menu').style.display = menuOpen ? 'flex' : 'none';
 }
 function leave() {
@@ -396,7 +418,7 @@ function bubbleSprite(text) {
   x.fillStyle = '#fff'; x.strokeStyle = 'rgba(0,0,0,.6)'; x.lineWidth = 3; x.beginPath();
   var r = 10; x.moveTo(r, 2); x.arcTo(W - 2, 2, W - 2, H, r); x.arcTo(W - 2, H, W / 2 + 10, H, r); x.lineTo(W / 2 + 10, H); x.lineTo(W / 2, H + T - 2); x.lineTo(W / 2 - 10, H); x.arcTo(2, H, 2, 2, r); x.arcTo(2, 2, W - 2, 2, r); x.closePath(); x.fill(); x.stroke();
   x.fillStyle = '#111'; x.textBaseline = 'middle'; lines.forEach(function(l, i) { x.fillText(l, 14, 11 + 16 + i * 32); });
-  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
+  var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: true, depthWrite: false, transparent: true }));
   s.scale.set(W / 40, (H + T) / 40, 1); s.center.set(0.5, 0); s.position.set(0, 7.4, 0); s.renderOrder = 11; return s;
 }
 function clearBubble(p) { if (p.bub) { p.g.remove(p.bub); p.bub.material.map.dispose(); p.bub.material.dispose(); p.bub = null; } }
@@ -433,13 +455,37 @@ cin.addEventListener('focus', function() { typing = true; keys = {}; });
 cin.addEventListener('blur', function() { typing = false; });
 cin.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.stopPropagation(); sendChat(cin.value); cin.value = ''; cin.blur(); } });
 
+/* ---------- touch controls (phone / tablet) ---------- */
+var joy = { f: 0, r: 0 }, joyId = null, touchOn = false;
+var joyEl = document.getElementById('joy'), knob = document.getElementById('knob'), jb = document.getElementById('jbtn');
+function joyMove(e) {
+  var b = joyEl.getBoundingClientRect(), R = 45, dx = e.clientX - (b.left + b.width / 2), dy = e.clientY - (b.top + b.height / 2), d = Math.hypot(dx, dy);
+  if (d > R) { dx = dx / d * R; dy = dy / d * R; }
+  knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; joy.r = dx / R; joy.f = -dy / R;
+}
+function joyEnd() { joyId = null; joy.f = 0; joy.r = 0; knob.style.transform = ''; }
+joyEl.addEventListener('pointerdown', function(e) { e.preventDefault(); joyId = e.pointerId; try { joyEl.setPointerCapture(e.pointerId); } catch (x) {} joyMove(e); });
+joyEl.addEventListener('pointermove', function(e) { if (e.pointerId === joyId) joyMove(e); });
+joyEl.addEventListener('pointerup', function(e) { if (e.pointerId === joyId) joyEnd(); });
+joyEl.addEventListener('pointercancel', joyEnd);
+function jbEnd() { keys.Space = false; jb.classList.remove('on'); }
+jb.addEventListener('pointerdown', function(e) { e.preventDefault(); try { jb.setPointerCapture(e.pointerId); } catch (x) {} keys.Space = true; jb.classList.add('on'); });
+jb.addEventListener('pointerup', jbEnd); jb.addEventListener('pointercancel', jbEnd);
+function enableTouch() {
+  if (touchOn) return; touchOn = true; document.body.classList.add('touch');
+  document.querySelector('#menu .hint').innerHTML = 'Left stick: move &middot; JUMP button: jump<br>Drag the screen: look &middot; Pinch: zoom';
+  document.getElementById('cin').placeholder = 'Tap here to chat';
+}
+if (window.matchMedia && matchMedia('(pointer: coarse)').matches) enableTouch();
+addEventListener('touchstart', enableTouch, { once: true, passive: true });
+
 /* ---------- join + main loop ---------- */
 function join() {
   var n = document.getElementById('nm').value.trim().replace(/\s+/g, ' ').slice(0, 16);
   if (!n) { document.getElementById('nm').focus(); return; }
   try { localStorage.setItem('bb_game_name', n); } catch (e) {}
   document.getElementById('join').style.display = 'none';
-  document.getElementById('hud').style.display = 'block'; document.getElementById('chat').style.display = 'block';
+  document.getElementById('hud').style.display = 'block'; document.getElementById('chat').style.display = 'block'; document.body.classList.add('playing');
   setStatus('Loading map...');
   mapReady.then(function() { me = makeAvatar(n, COLORS[0]); respawn(); playing = true; setStatus('Connecting...'); drawList(); connect(n); });
 }
