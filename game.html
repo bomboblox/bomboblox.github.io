@@ -31,7 +31,7 @@ canvas{display:block}
 #menu button{height:36px;border:0;font-weight:700;font-size:15px;cursor:pointer;background:#333;color:#f1f1f1}
 #menu button:hover{background:#444}#menu button.pri{background:#ff6a00;color:#111}#menu button.pri:hover{background:#e05a00}#menu button.red{color:#ff5a5a}
 #plist{font-size:14px;line-height:1.6;max-height:150px;overflow:auto}
-#chat{position:fixed;left:10px;top:92px;width:340px;max-width:calc(100vw - 20px);display:none}
+#chat{position:fixed;left:10px;top:10px;width:340px;max-width:calc(100vw - 20px);display:none}
 #clog{height:150px;overflow-y:auto;background:rgba(17,17,17,.6);padding:6px 8px;font-size:13px;line-height:1.45;word-break:break-word}
 #cin{width:100%;box-sizing:border-box;height:30px;background:rgba(17,17,17,.9);border:1px solid #333;color:#f1f1f1;padding:0 8px;font-size:13px;outline:none}
 #cin:focus{border-color:#ff6a00}
@@ -44,22 +44,28 @@ body.touch.playing #touchui{display:block}
 #knob{position:absolute;left:35px;top:35px;width:60px;height:60px;border-radius:50%;background:rgba(255,106,0,.85);pointer-events:none}
 #jbtn{position:fixed;right:calc(32px + env(safe-area-inset-right));bottom:calc(44px + env(safe-area-inset-bottom));width:90px;height:90px;border-radius:50%;background:rgba(255,106,0,.8);color:#111;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center;touch-action:none;z-index:4;border:2px solid rgba(255,255,255,.5)}
 #jbtn.on{background:#fff}
-body.touch #chat{top:92px;bottom:auto;width:260px}
+body.touch #chat{top:10px;bottom:auto;width:260px}
 body.touch #clog{height:100px}
 @media(max-height:480px){body.touch #clog{height:56px}}
+#hud{left:auto;right:10px;top:10px;padding:0;min-width:0;background:none;border:0}
+#menubtn{width:44px;height:44px;padding:0;margin:0;background:rgba(17,17,17,.88);border:2px solid #ff6a00;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+#menubtn:hover{background:#2a1608}
+#menubtn span{display:block;width:22px;height:3px;background:#ff6a00}
+#diag{color:#777;font-size:12px;line-height:1.5;border-top:1px solid #333;padding-top:8px}
+#diag div:empty{display:none}
 </style>
 </head>
 <body>
-<div id="hud"><button id="menubtn" type="button">Menu</button><div id="status">Starting...</div><div id="mapinfo" style="color:#999;font-size:12px"></div><div id="hatinfo" style="color:#999;font-size:12px"></div></div>
+<div id="hud"><button id="menubtn" type="button" aria-label="Menu"><span></span><span></span><span></span></button></div>
 
 <div id="chat"><div id="clog"></div><input id="cin" maxlength="100" placeholder="Press Enter or / to chat" autocomplete="off"></div>
 
 <div id="menu"><div class="mbox">
   <h2>Menu</h2>
   <div id="plist"></div>
-  <div class="hint">WASD / arrows: move &middot; Space: jump<br>Hold mouse + drag: look &middot; Scroll: zoom<br>Enter or /: chat &middot; Esc: menu<br>V: first person (or scroll all the way in)</div>
+  <div id="diag"><div id="status">Starting...</div><div id="mapinfo"></div><div id="hatinfo"></div></div>
+  <div class="hint">WASD / arrows: move &middot; Space: jump<br>Hold mouse + drag: look &middot; Scroll: zoom<br>Enter or /: chat &middot; Esc: menu<br>Scroll all the way in: first person</div>
   <button id="mres" class="pri" type="button">Resume</button>
-  <button id="mfp" type="button">Switch to first person</button>
   <button id="mreset" type="button">Reset character</button>
   <button id="mleave" class="red" type="button">Leave game</button>
 </div></div>
@@ -184,11 +190,13 @@ function makeAvatar(name, color) {
   p.shadow.rotation.x = -Math.PI / 2; p.shadow.position.y = 0.04;
   p.shadow.visible = false; scene.add(g); scene.add(p.shadow); return p;
 }
-function animate(p, dt, moving, y) {
+function animate(p, dt, moving, y, air) {
   p.amp += ((moving ? 0.9 : 0) - p.amp) * Math.min(1, dt * 12);
   if (moving) p.ph += dt * 11;
-  var s = Math.sin(p.ph) * p.amp;
-  p.aL.rotation.x = s; p.aR.rotation.x = -s; p.lL.rotation.x = -s; p.lR.rotation.x = s;
+  p.airF = (p.airF || 0) + ((air ? 1 : 0) - (p.airF || 0)) * Math.min(1, dt * 14);      /* 0 = on the ground, 1 = in the air */
+  var s = Math.sin(p.ph) * p.amp, a = p.airF, b = 1 - a;
+  p.aL.rotation.x = s * b - 2.5 * a; p.aR.rotation.x = -s * b - 2.5 * a;               /* jump: both arms swing up */
+  p.lL.rotation.x = -s * b - 0.35 * a; p.lR.rotation.x = s * b + 0.3 * a;               /* jump: legs hang a little apart */
   p.shadow.position.x = p.g.position.x; p.shadow.position.z = p.g.position.z;
   var k = 1 / (1 + y * 0.12); p.shadow.scale.set(k, k, 1); p.shadow.material.opacity = 0.35 * k;
 }
@@ -205,7 +213,6 @@ addEventListener('keydown', function(e) {
   if (typing) return;
   if (!menuOpen && (e.code === 'Enter' || e.key === '/')) { e.preventDefault(); document.getElementById('cin').focus(); return; }
   if (menuOpen) return;
-  if (e.code === 'KeyV') { toggleFP(); return; }
   keys[e.code] = true; if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault();
 });
 addEventListener('keyup', function(e) { keys[e.code] = false; });
@@ -248,7 +255,7 @@ function stepMe(dt) {
   if (!hasMap) { pos.x = Math.max(-LIMIT, Math.min(LIMIT, pos.x)); pos.z = Math.max(-LIMIT, Math.min(LIMIT, pos.z)); }
   if (pos.y < -200) respawn();
   me.g.position.set(pos.x, pos.y, pos.z); me.inner.rotation.y = rot;
-  animate(me, dt, moving && onGround, pos.y);
+  meMoving = moving && onGround; meAir = !onGround; animate(me, dt, meMoving, pos.y, meAir);
 }
 var camD = 16, fp = false;
 function rayBox(c, ox, oy, oz, dx, dy, dz) {      /* distance along the ray to where it enters this part, or Infinity */
@@ -278,7 +285,8 @@ function stepCam(dt) {
 }
 
 /* ---------- multiplayer (Firebase Realtime Database) ---------- */
-var slot = -1, sref = null, remotes = {}, dbOK = false, sent = { x: 1e9, y: 0, z: 0, r: 0, t: 0 };
+var slot = -1, sref = null, remotes = {}, dbOK = false, sent = { x: 1e9, y: 0, z: 0, r: 0, t: 0, w: 0, j: 0 }, meMoving = false, meAir = false;
+var srvOff = 0, lastSlots = {}, STALE = 20000;       /* a slot with no heartbeat for 20s belongs to someone who is gone */
 function setStatus(t) { document.getElementById('status').textContent = t; }
 function drawList() {
   var h = '<span class="dot" style="background:#' + COLORS[Math.max(slot, 0)].toString(16).padStart(6, '0') + '"></span><b>' + esc(me.name) + '</b> (you)';
@@ -288,54 +296,74 @@ function drawList() {
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
+var DB = null, SID = Math.random().toString(36).slice(2), joinedOnce = false, failTimer = null, myName = '';
+function fresh(d) { return !!d && typeof d.ts === 'number' && (Date.now() + srvOff - d.ts) < STALE; }
+function slotFree(cur) { return cur === null || !fresh(cur) || typeof cur.n !== 'string'; }
 function connect(name) {
-  var fail = setTimeout(function() { if (!dbOK) setStatus('Solo mode (cant reach Realtime Database, see setup note in game.html)'); }, 8000);
+  myName = name;
+  failTimer = setTimeout(function() { if (!dbOK) setStatus('Solo mode (cant reach Realtime Database, see setup note in game.html)'); }, 8000);
   try {
-    firebase.initializeApp(CFG);
-    var db = firebase.database();
-    var claim = function(i) {
-      if (i >= MAX) { clearTimeout(fail); setStatus('Server is full (5/5). Solo mode. Refresh to try again.'); return; }
-      db.ref('game/slots/' + i).transaction(function(cur) { return cur === null ? { n: name, x: 0, y: 0, z: 0, r: 0 } : undefined; }, function(err, ok) {
-        if (err) { clearTimeout(fail); setStatus('Solo mode (database said: ' + (err.code || err.message) + '). Check the Rules tab.'); return; }
-        if (!ok) return claim(i + 1);
-        clearTimeout(fail); slot = i; dbOK = true; sref = db.ref('game/slots/' + i); sref.onDisconnect().remove();
-        me.torso.material.color.copy(lin(COLORS[i]));
-        pos.x += (i - 2) * 3;                                   /* spawn side by side */
-        db.ref('game/slots').on('value', function(snap) { syncRemotes(snap.val() || {}); }); db.ref('game/slots').once('value').then(function(snap) {            /* first one in? then start with a fresh chat */
-          var v = snap.val() || {}, alone = Object.keys(v).every(function(k) { return +k === slot; });
-          return alone ? db.ref('game/chat').remove() : null;
-        }).catch(function() {}).then(function() { startChat(db); });
-        setInterval(sendMe, 70); drawList();
-      }, false);
-    };
-    claim(0);
-  } catch (e) { clearTimeout(fail); setStatus('Solo mode (' + e.message + ')'); }
+    firebase.initializeApp(CFG); DB = firebase.database();
+    DB.ref('.info/serverTimeOffset').once('value').then(function(sn) { srvOff = sn.val() || 0; }).catch(function() {}).then(function() { claimSlot(0); });
+  } catch (e) { clearTimeout(failTimer); setStatus('Solo mode (' + e.message + ')'); }
 }
+function claimSlot(i) {
+  if (i >= MAX) { clearTimeout(failTimer); slot = -1; sref = null; dbOK = false; setStatus('Server is full (5/5). Solo mode. Refresh to try again.'); return; }
+  DB.ref('game/slots/' + i).transaction(function(cur) {
+    /* take a free slot, or one left behind by a player who is gone */
+    return slotFree(cur) ? { n: myName, sid: SID, x: pos.x, y: pos.y, z: pos.z, r: rot, w: 0, j: 0, ts: firebase.database.ServerValue.TIMESTAMP } : undefined;
+  }, function(err, ok) {
+    if (err) { clearTimeout(failTimer); setStatus('Solo mode (database said: ' + (err.code || err.message) + '). Check the Rules tab.'); return; }
+    if (!ok) return claimSlot(i + 1);
+    clearTimeout(failTimer); slot = i; dbOK = true; sref = DB.ref('game/slots/' + i); sref.onDisconnect().remove();
+    me.torso.material.color.copy(lin(COLORS[i])); sent.x = 1e9;
+    if (!joinedOnce) { joinedOnce = true; pos.x += (i - 2) * 3; startNetwork(); }       /* spawn side by side */
+    drawList();
+  }, false);
+}
+function startNetwork() {
+  DB.ref('game/slots').on('value', function(snap) {
+    lastSlots = snap.val() || {};
+    var m = lastSlots[slot];
+    if (sref && slot >= 0 && (!m || m.sid !== SID)) { sref = null; slot = -1; dbOK = false; claimSlot(0); }   /* our slot was taken or wiped (phone slept): get a new one */
+    syncRemotes(lastSlots);
+  });
+  DB.ref('game/slots').once('value').then(function(snap) {            /* first one in? then start with a fresh chat */
+    var v = snap.val() || {}, alone = Object.keys(v).every(function(k) { return +k === slot || !fresh(v[k]); });
+    return alone ? DB.ref('game/chat').remove() : null;
+  }).catch(function() {}).then(function() { startChat(DB); });
+  setInterval(sendMe, 70);
+  setInterval(function() { if (mine()) sref.update({ ts: firebase.database.ServerValue.TIMESTAMP }); }, 5000);   /* heartbeat */
+  setInterval(function() { syncRemotes(lastSlots); }, 3000);                                                     /* forget players whose heartbeat stopped */
+}
+function mine() { return !!sref && !!lastSlots[slot] && lastSlots[slot].sid === SID; }
 function sendMe() {
-  if (!sref) return;
-  var now = Date.now(), moved = Math.abs(pos.x - sent.x) + Math.abs(pos.y - sent.y) + Math.abs(pos.z - sent.z) + Math.abs(rot - sent.r) > 0.01;
+  if (!mine()) return;
+  var now = Date.now(), w = meMoving ? 1 : 0, j = meAir ? 1 : 0;
+  var moved = Math.abs(pos.x - sent.x) + Math.abs(pos.y - sent.y) + Math.abs(pos.z - sent.z) + Math.abs(rot - sent.r) > 0.01 || w !== sent.w || j !== sent.j;
   if (!moved && now - sent.t < 1500) return;
-  sent = { x: pos.x, y: pos.y, z: pos.z, r: rot, t: now };
-  sref.update({ x: +pos.x.toFixed(2), y: +pos.y.toFixed(2), z: +pos.z.toFixed(2), r: +rot.toFixed(2) });
+  sent = { x: pos.x, y: pos.y, z: pos.z, r: rot, t: now, w: w, j: j };
+  sref.update({ x: +pos.x.toFixed(2), y: +pos.y.toFixed(2), z: +pos.z.toFixed(2), r: +rot.toFixed(2), w: w, j: j });
 }
 function syncRemotes(v) {
-  Object.keys(remotes).forEach(function(i) { if (!v[i] || +i === slot) { removeAvatar(remotes[i]); delete remotes[i]; } });
-  Object.keys(v).forEach(function(i) {
-    if (+i === slot || !v[i] || typeof v[i].n !== 'string') return;
-    var d = v[i], p = remotes[i];
-    if (p && p.name !== d.n) { removeAvatar(p); p = null; }
-    if (!p) { p = remotes[i] = makeAvatar(d.n.slice(0, 16), COLORS[i]); p.g.position.set(d.x || 0, d.y || 0, d.z || 0); p.rot = d.r || 0; }
-    p.tx = d.x || 0; p.ty = d.y || 0; p.tz = d.z || 0; p.tr = d.r || 0;
+  var live = {};
+  Object.keys(v).forEach(function(i) { if (+i !== slot && fresh(v[i]) && typeof v[i].n === 'string') live[i] = v[i]; });
+  Object.keys(remotes).forEach(function(i) { if (!live[i]) { removeAvatar(remotes[i]); delete remotes[i]; } });
+  Object.keys(live).forEach(function(i) {
+    var d = live[i], p = remotes[i];
+    if (p && (p.name !== d.n || p.sid !== d.sid)) { removeAvatar(p); p = null; }
+    if (!p) { p = remotes[i] = makeAvatar(d.n.slice(0, 16), COLORS[i]); p.sid = d.sid; p.g.position.set(d.x || 0, d.y || 0, d.z || 0); p.rot = d.r || 0; }
+    p.tx = d.x || 0; p.ty = d.y || 0; p.tz = d.z || 0; p.tr = d.r || 0; p.tw = d.w === 1; p.tj = d.j === 1;
   });
   drawList();
 }
 function stepRemotes(dt) {
   var k = 1 - Math.exp(-dt * 14);
   Object.keys(remotes).forEach(function(i) {
-    var p = remotes[i], g = p.g.position, ox = g.x, oz = g.z;
+    var p = remotes[i], g = p.g.position;
     g.x += (p.tx - g.x) * k; g.y += (p.ty - g.y) * k; g.z += (p.tz - g.z) * k;
     var d = Math.atan2(Math.sin(p.tr - p.rot), Math.cos(p.tr - p.rot)); p.rot += d * k; p.inner.rotation.y = p.rot;
-    animate(p, dt, Math.hypot(g.x - ox, g.z - oz) / dt > 2 && g.y < 0.3, g.y);
+    animate(p, dt, p.tw && !p.tj, g.y, p.tj);                      /* walking / jumping as the other player reports it (works at any height) */
   });
 }
 addEventListener('beforeunload', function() { if (sref) { if (!Object.keys(remotes).length && chatRef) chatRef.remove(); sref.remove(); } });
@@ -551,9 +579,8 @@ function vertical(py) {
 }
 
 /* ---------- menu ---------- */
-function toggleFP() { dist = dist <= 1 ? 12 : 0.5; camD = dist; if (dist > 1) pitch = Math.max(pitch, 0.05); }
 function toggleMenu() {
-  menuOpen = !menuOpen; document.getElementById('mfp').textContent = dist <= 1 ? 'Switch to third person' : 'Switch to first person'; keys = {}; joyEnd(); jbEnd();
+  menuOpen = !menuOpen; keys = {}; joyEnd(); jbEnd();
   document.getElementById('menu').style.display = menuOpen ? 'flex' : 'none';
 }
 function leave() {
@@ -566,7 +593,6 @@ function leave() {
 }
 document.getElementById('menubtn').onclick = toggleMenu;
 document.getElementById('mres').onclick = toggleMenu;
-document.getElementById('mfp').onclick = function() { toggleFP(); toggleMenu(); };
 document.getElementById('mreset').onclick = function() { respawn(); toggleMenu(); };
 document.getElementById('mleave').onclick = leave;
 
