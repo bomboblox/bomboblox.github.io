@@ -31,7 +31,7 @@ canvas{display:block}
 #menu button{height:36px;border:0;font-weight:700;font-size:15px;cursor:pointer;background:#333;color:#f1f1f1}
 #menu button:hover{background:#444}#menu button.pri{background:#ff6a00;color:#111}#menu button.pri:hover{background:#e05a00}#menu button.red{color:#ff5a5a}
 #plist{font-size:14px;line-height:1.6;max-height:150px;overflow:auto}
-#chat{position:fixed;left:10px;bottom:10px;width:340px;max-width:calc(100vw - 20px);display:none}
+#chat{position:fixed;left:10px;top:92px;width:340px;max-width:calc(100vw - 20px);display:none}
 #clog{height:150px;overflow-y:auto;background:rgba(17,17,17,.6);padding:6px 8px;font-size:13px;line-height:1.45;word-break:break-word}
 #cin{width:100%;box-sizing:border-box;height:30px;background:rgba(17,17,17,.9);border:1px solid #333;color:#f1f1f1;padding:0 8px;font-size:13px;outline:none}
 #cin:focus{border-color:#ff6a00}
@@ -57,8 +57,9 @@ body.touch #clog{height:100px}
 <div id="menu"><div class="mbox">
   <h2>Menu</h2>
   <div id="plist"></div>
-  <div class="hint">WASD / arrows: move &middot; Space: jump<br>Hold mouse + drag: look &middot; Scroll: zoom<br>Enter or /: chat &middot; Esc: menu</div>
+  <div class="hint">WASD / arrows: move &middot; Space: jump<br>Hold mouse + drag: look &middot; Scroll: zoom<br>Enter or /: chat &middot; Esc: menu<br>V: first person (or scroll all the way in)</div>
   <button id="mres" class="pri" type="button">Resume</button>
+  <button id="mfp" type="button">Switch to first person</button>
   <button id="mreset" type="button">Reset character</button>
   <button id="mleave" class="red" type="button">Leave game</button>
 </div></div>
@@ -136,8 +137,8 @@ function bevelGeo(w, h, d, r) {                    /* a box whose edges and corn
   function remap(t, half) { var u = Math.abs(t) / half, sg = t < 0 ? -1 : 1; return u > 0.99 ? sg * half : u > 0.4 ? sg * (half - r) : 0; }
   for (var i = 0; i < p.count; i++) {
     var P = [remap(p.getX(i), H[0]), remap(p.getY(i), H[1]), remap(p.getZ(i), H[2])], C = [], n = [], L = 0, a;
-    for (a = 0; a < 3; a++) { C[a] = Math.max(-(H[a] - r), Math.min(H[a] - r, P[a])); n[a] = P[a] - C[a]; L += n[a] * n[a]; }
-    if (L > 1e-12) { L = Math.sqrt(L); for (a = 0; a < 3; a++) P[a] = C[a] + n[a] / L * r; }
+    for (a = 0; a < 3; a++) { C[a] = Math.max(-(H[a] - r), Math.min(H[a] - r, P[a])); n[a] = P[a] - C[a]; L += Math.abs(n[a]); }
+    if (L > 1e-12) { for (a = 0; a < 3; a++) P[a] = C[a] + n[a] / L * r; }
     p.setXYZ(i, P[0], P[1], P[2]);
   }
   g.computeVertexNormals(); return (GEOS[key] = g);
@@ -148,14 +149,14 @@ function bbox(w, h, d, c, x, y, z) {
 }
 function headGeo() {                                /* roblox head: a short cylinder with a rounded top and a small bevel underneath */
   if (HEADG) return HEADG;
-  var R = 0.62, Hh = 1.2, t = 0.22, b = 0.08, pts = [new THREE.Vector2(0, -Hh / 2)], i, a;
+  var R = 0.62, Hh = 1.2, t = 0.22, b = 0.2, pts = [new THREE.Vector2(0, -Hh / 2)], i, a;
   for (i = 0; i <= 4; i++) { a = i / 4 * Math.PI / 2; pts.push(new THREE.Vector2(R - b + Math.sin(a) * b, -Hh / 2 + b - Math.cos(a) * b)); }
   for (i = 0; i <= 8; i++) { a = i / 8 * Math.PI / 2; pts.push(new THREE.Vector2(R - t + Math.cos(a) * t, Hh / 2 - t + Math.sin(a) * t)); }
   pts.push(new THREE.Vector2(0, Hh / 2));
   return (HEADG = new THREE.LatheGeometry(pts, 32));
 }
 function makeHead() {
-  var g = new THREE.Group(), R = 0.62, fh = 0.9, fy = -0.07;     /* the face lives on the straight part of the head */
+  var g = new THREE.Group(), R = 0.62, fh = 0.78, fy = -0.01;     /* the face lives on the straight part of the head */
   var head = new THREE.Mesh(headGeo(), new THREE.MeshStandardMaterial({ color: lin(0xf5cd30), roughness: 0.7, metalness: 0 }));
   head.castShadow = true; head.receiveShadow = true; g.add(head);
   if (FACE) {                                                   /* bomboface.png wrapped around the front of the head */
@@ -202,6 +203,7 @@ addEventListener('keydown', function(e) {
   if (typing) return;
   if (!menuOpen && (e.code === 'Enter' || e.key === '/')) { e.preventDefault(); document.getElementById('cin').focus(); return; }
   if (menuOpen) return;
+  if (e.code === 'KeyV') { toggleFP(); return; }
   keys[e.code] = true; if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault();
 });
 addEventListener('keyup', function(e) { keys[e.code] = false; });
@@ -215,12 +217,12 @@ cv.addEventListener('pointermove', function(e) {
   var ids = Object.keys(ptrs);
   if (ids.length >= 2) {                                     /* two fingers: pinch to zoom */
     p.x = e.clientX; p.y = e.clientY; var a = ptrs[ids[0]], b = ptrs[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y);
-    if (lastPinch) dist = Math.max(6, Math.min(45, dist - (d - lastPinch) * 0.06)); lastPinch = d; return;
+    if (lastPinch) dist = Math.max(0.5, Math.min(45, dist - (d - lastPinch) * 0.06)); lastPinch = d; return;
   }
   var k = e.pointerType === 'touch' ? 0.009 : 0.006;
-  yaw -= (e.clientX - p.x) * k; pitch = Math.max(0.05, Math.min(1.45, pitch + (e.clientY - p.y) * k)); p.x = e.clientX; p.y = e.clientY;
+  yaw -= (e.clientX - p.x) * k; pitch = Math.max(dist <= 1 ? -1.45 : 0.05, Math.min(1.45, pitch + (e.clientY - p.y) * k)); p.x = e.clientX; p.y = e.clientY;
 });
-cv.addEventListener('wheel', function(e) { e.preventDefault(); dist = Math.max(6, Math.min(45, dist + e.deltaY * 0.02)); }, { passive: false });
+cv.addEventListener('wheel', function(e) { e.preventDefault(); dist = Math.max(0.5, Math.min(45, dist + e.deltaY * 0.02)); }, { passive: false });
 cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 addEventListener('resize', function() { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); ren.setSize(innerWidth, innerHeight); });
 
@@ -246,7 +248,7 @@ function stepMe(dt) {
   me.g.position.set(pos.x, pos.y, pos.z); me.inner.rotation.y = rot;
   animate(me, dt, moving && onGround, pos.y);
 }
-var camD = 16;
+var camD = 16, fp = false;
 function rayBox(c, ox, oy, oz, dx, dy, dz) {      /* distance along the ray to where it enters this part, or Infinity */
   var cy = (c.bot + c.top) / 2, rx = ox - c.x, rz = oz - c.z;
   var o = [c.cs * rx - c.sn * rz, oy - cy, c.sn * rx + c.cs * rz], d = [c.cs * dx - c.sn * dz, dy, c.sn * dx + c.cs * dz], h = [c.hx, (c.top - c.bot) / 2, c.hz];
@@ -260,6 +262,11 @@ function rayBox(c, ox, oy, oz, dx, dy, dz) {      /* distance along the ray to w
 function stepCam(dt) {
   var tx = pos.x, ty = pos.y + 4, tz = pos.z;
   var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch), allowed = dist;
+  fp = dist <= 1; if (me) me.g.visible = !fp;                       /* first person: camera in the head, your avatar is hidden */
+  if (fp) {
+    var ey = pos.y + 4.7; cam.position.set(tx, ey, tz); cam.lookAt(tx - dx, ey - dy, tz - dz);
+    sun.position.set(tx + 60, ty + 100, tz + 40); sun.target.position.set(tx, ty - 4, tz); sky.position.copy(cam.position); return;
+  }
   if (hasMap) for (var i = 0; i < colliders.length; i++) { var t = rayBox(colliders[i], tx, ty, tz, dx, dy, dz); if (t < allowed) allowed = t; }
   allowed = Math.max(1.2, allowed - 0.5);                          /* stop just in front of the wall */
   if (allowed < camD) camD = allowed; else camD += (allowed - camD) * Math.min(1, (dt || 0.016) * 6);
@@ -292,7 +299,10 @@ function connect(name) {
         clearTimeout(fail); slot = i; dbOK = true; sref = db.ref('game/slots/' + i); sref.onDisconnect().remove();
         me.torso.material.color.copy(lin(COLORS[i]));
         pos.x += (i - 2) * 3;                                   /* spawn side by side */
-        db.ref('game/slots').on('value', function(snap) { syncRemotes(snap.val() || {}); }); startChat(db);
+        db.ref('game/slots').on('value', function(snap) { syncRemotes(snap.val() || {}); }); db.ref('game/slots').once('value').then(function(snap) {            /* first one in? then start with a fresh chat */
+          var v = snap.val() || {}, alone = Object.keys(v).every(function(k) { return +k === slot; });
+          return alone ? db.ref('game/chat').remove() : null;
+        }).catch(function() {}).then(function() { startChat(db); });
         setInterval(sendMe, 70); drawList();
       }, false);
     };
@@ -326,7 +336,7 @@ function stepRemotes(dt) {
     animate(p, dt, Math.hypot(g.x - ox, g.z - oz) / dt > 2 && g.y < 0.3, g.y);
   });
 }
-addEventListener('beforeunload', function() { if (sref) sref.remove(); });
+addEventListener('beforeunload', function() { if (sref) { if (!Object.keys(remotes).length && chatRef) chatRef.remove(); sref.remove(); } });
 
 /* ---------- map import (map.json from BomboExport.lua) ---------- */
 /* materials: 0 Fabric, 1 Foil, 2 Grass, 3 Wood, 4 Slate, 5 Brick, 6 anything else (grey). Textures are drawn in code, 8 studs per tile. */
@@ -395,6 +405,21 @@ function addCollider(sx, sy, sz, x, y, z, R) {
   }
   colliders.push(c);
 }
+/* point lights from Studio: a fixed pool of LIGHT_MAX real lights is moved onto the lights nearest to the player (a constant number of lights avoids stutter) */
+var LIGHT_MAX = 8, LIGHT_BOOST = 2.0, mapLights = [], lightPool = [], lf = 0;
+function setupLights(arr) {
+  mapLights = arr.map(function(l) { return { x: l[0], y: l[1], z: l[2], c: new THREE.Color(l[3], l[4], l[5]).convertSRGBToLinear(), b: l[6], r: Math.max(1, l[7]) }; });
+  for (var i = 0; i < Math.min(LIGHT_MAX, mapLights.length); i++) { var L = new THREE.PointLight(0xffffff, 0, 1, 1.5); scene.add(L); lightPool.push(L); }
+}
+function updateLights() {
+  if (!lightPool.length) return;
+  var list = mapLights.map(function(l) { var d = Math.hypot(l.x - pos.x, l.y - pos.y - 3, l.z - pos.z); return { l: l, k: d - l.r }; });
+  list.sort(function(a, b) { return a.k - b.k; });
+  lightPool.forEach(function(L, i) {
+    var e = list[i]; if (!e) { L.intensity = 0; return; }
+    L.position.set(e.l.x, e.l.y, e.l.z); L.color.copy(e.l.c); L.distance = e.l.r; L.intensity = e.l.b * LIGHT_BOOST;
+  });
+}
 function buildMap(data) {
   var grp = new THREE.Group(); scene.add(grp);
   data.parts.forEach(function(q) {
@@ -412,10 +437,11 @@ function buildMap(data) {
     m.updateMatrixWorld(true); grp.add(m);
   });
   if (data.spawn) spawn = data.spawn;
+  if (data.lights && data.lights.length) setupLights(data.lights);
   hasMap = true; scene.remove(base); scene.remove(grid);
 }
 var mapReady = loadTextures().then(function() { return fetch('map.json?v=' + Date.now()); }).then(function(r) { if (!r.ok) throw new Error('no map.json'); return r.json(); }).then(function(d) {
-  buildMap(d); document.getElementById('mapinfo').textContent = 'Map: ' + d.parts.length + ' parts. Images: ' + (LOADED.length ? LOADED.join(', ') : 'none (built-in textures)');
+  buildMap(d); document.getElementById('mapinfo').textContent = 'Map: ' + d.parts.length + ' parts, ' + mapLights.length + ' lights. Images: ' + (LOADED.length ? LOADED.join(', ') : 'none (built-in textures)');
 }).catch(function(e) {
   document.getElementById('mapinfo').textContent = e.message === 'no map.json' ? 'No map.json found, using the blank baseplate' : 'map.json is broken (' + e.message + '), using the baseplate';
 });
@@ -452,16 +478,22 @@ function vertical(py) {
 }
 
 /* ---------- menu ---------- */
+function toggleFP() { dist = dist <= 1 ? 12 : 0.5; camD = dist; if (dist > 1) pitch = Math.max(pitch, 0.05); }
 function toggleMenu() {
-  menuOpen = !menuOpen; keys = {}; joyEnd(); jbEnd();
+  menuOpen = !menuOpen; document.getElementById('mfp').textContent = dist <= 1 ? 'Switch to third person' : 'Switch to first person'; keys = {}; joyEnd(); jbEnd();
   document.getElementById('menu').style.display = menuOpen ? 'flex' : 'none';
 }
 function leave() {
   var go = function() { location.href = 'index.html'; };
-  if (sref) { sref.remove().then(go, go); setTimeout(go, 1000); } else go();
+  if (sref) {
+    var p = sref.remove();
+    if (!Object.keys(remotes).length && chatRef) p = p.then(function() { return chatRef.remove(); });   /* last one out clears the chat */
+    p.then(go, go); setTimeout(go, 1200);
+  } else go();
 }
 document.getElementById('menubtn').onclick = toggleMenu;
 document.getElementById('mres').onclick = toggleMenu;
+document.getElementById('mfp').onclick = function() { toggleFP(); toggleMenu(); };
 document.getElementById('mreset').onclick = function() { respawn(); toggleMenu(); };
 document.getElementById('mleave').onclick = leave;
 
@@ -532,7 +564,7 @@ jb.addEventListener('pointerdown', function(e) { e.preventDefault(); try { jb.se
 jb.addEventListener('pointerup', jbEnd); jb.addEventListener('pointercancel', jbEnd);
 function enableTouch() {
   if (touchOn) return; touchOn = true; document.body.classList.add('touch');
-  document.querySelector('#menu .hint').innerHTML = 'Left stick: move &middot; JUMP button: jump<br>Drag the screen: look &middot; Pinch: zoom';
+  document.querySelector('#menu .hint').innerHTML = 'Left stick: move &middot; JUMP button: jump<br>Drag the screen: look &middot; Pinch: zoom<br>Pinch all the way in: first person';
   document.getElementById('cin').placeholder = 'Tap here to chat';
 }
 if (window.matchMedia && matchMedia('(pointer: coarse)').matches) enableTouch();
@@ -558,7 +590,7 @@ var last = performance.now();
   requestAnimationFrame(loop);
   var dt = Math.min(0.05, (t - last) / 1000); last = t;
   if (me) { stepMe(dt); stepRemotes(dt); }
-  stepCam(dt); updateBubbles(); ren.render(scene, cam);
+  stepCam(dt); if (++lf % 8 === 0) updateLights(); updateBubbles(); ren.render(scene, cam);
 })(last);
 </script>
 </body>
