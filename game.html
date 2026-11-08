@@ -50,7 +50,7 @@ body.touch #clog{height:100px}
 </style>
 </head>
 <body>
-<div id="hud"><button id="menubtn" type="button">Menu</button><div id="status">Starting...</div><div id="mapinfo" style="color:#999;font-size:12px"></div></div>
+<div id="hud"><button id="menubtn" type="button">Menu</button><div id="status">Starting...</div><div id="mapinfo" style="color:#999;font-size:12px"></div><div id="hatinfo" style="color:#999;font-size:12px"></div></div>
 
 <div id="chat"><div id="clog"></div><input id="cin" maxlength="100" placeholder="Press Enter or / to chat" autocomplete="off"></div>
 
@@ -74,6 +74,7 @@ body.touch #clog{height:100px}
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
@@ -175,6 +176,7 @@ function makeAvatar(name, color) {
   var g = new THREE.Group(), inner = new THREE.Group(); g.add(inner);
   var torso = bbox(2, 2, 1, color, 0, 3, 0); inner.add(torso);
   inner.add(makeHead());
+  if (HAT) { var hat = HAT.clone(true); hat.position.y = HAT_Y; hat.scale.setScalar(HAT_SCALE); inner.add(hat); }
   function limb(c, x, y) { var p = new THREE.Group(); p.position.set(x, y, 0); p.add(bbox(1, 2, 1, c, 0, -1, 0)); inner.add(p); return p; }
   var p = { g: g, inner: inner, torso: torso, aL: limb(0xf5cd30, -1.5, 4), aR: limb(0xf5cd30, 1.5, 4), lL: limb(0xa3c76d, -0.5, 2), lR: limb(0xa3c76d, 0.5, 2), amp: 0, ph: 0, name: name };
   g.add(nameTag(name));
@@ -356,6 +358,22 @@ var TEXFN = [
 ];
 /* texture images in the repo root: fabric.png foil.png grass.png wood.png slate.png brick.png (one tile = TILE studs). Missing ones use the built-in look. */
 var IMG = ['fabric', 'foil', 'grass', 'wood', 'slate', 'brick'], TEXS = [], LOADED = [];
+/* hat1.glb: modelled on a Roblox rig with its origin at the bottom of the feet, which is exactly where each avatar's origin is,
+   so it is added at (0,0,0) with no offset. If it ever sits wrong, nudge HAT_Y (up/down, studs) or HAT_SCALE here. */
+var HAT = null, HAT_SCALE = 1, HAT_Y = 0;
+function loadHat() {
+  return new Promise(function(res) {
+    var info = document.getElementById('hatinfo'), done = false;
+    function fin(msg) { if (done) return; done = true; if (msg) info.textContent = msg; res(); }
+    if (!THREE.GLTFLoader) { fin('Hat: model loader did not load'); return; }
+    setTimeout(function() { fin('Hat: timed out loading hat1.glb'); }, 8000);
+    new THREE.GLTFLoader().load('hat1.glb?v=' + Date.now(), function(gltf) {
+      HAT = gltf.scene; HAT.traverse(function(o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      var b = new THREE.Box3().setFromObject(HAT); LOADED.push('hat1.glb');
+      fin('Hat: from y=' + b.min.y.toFixed(2) + ' to y=' + b.max.y.toFixed(2) + ' (' + (b.max.x - b.min.x).toFixed(2) + ' wide)');
+    }, undefined, function() { fin('Hat: hat1.glb not found'); });
+  });
+}
 function loadFace() {
   return new Promise(function(res) {
     new THREE.TextureLoader().load('bomboface.png?v=' + Date.now(), function(t) { t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; FACE = t; LOADED.push('bomboface.png'); res(); }, undefined, function() { res(); });
@@ -366,7 +384,7 @@ function loadTextures() {
     return new Promise(function(res) {
       new THREE.TextureLoader().load(n + '.png?v=' + Date.now(), function(t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; t.encoding = THREE.sRGBEncoding; TEXS[i] = t; LOADED.push(n + '.png'); res(); }, undefined, function() { res(); });
     });
-  }).concat([loadFace()]));
+  }).concat([loadFace(), loadHat()]));
 }
 function getMat(i, transp) {
   if (!MATS3[i]) {
