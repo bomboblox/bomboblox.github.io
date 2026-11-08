@@ -370,10 +370,10 @@ function loadTextures() {
 }
 function getMat(i, transp) {
   if (!MATS3[i]) {
-    if (i === 6) MATS3[i] = new THREE.MeshLambertMaterial({ color: lin(0xa3a2a5) });
+    if (i === 6) MATS3[i] = new THREE.MeshPhongMaterial({ color: lin(0xa3a2a5), specular: 0x111111, shininess: 8 });
     else {
       var t = TEXS[i] || mkTex(TEXFN[i]);
-      MATS3[i] = i === 1 ? new THREE.MeshPhongMaterial({ map: t, shininess: 90, specular: 0xffffff }) : new THREE.MeshLambertMaterial({ map: t });
+      MATS3[i] = i === 1 ? new THREE.MeshPhongMaterial({ map: t, shininess: 35, specular: 0x4a4a4a }) : new THREE.MeshPhongMaterial({ map: t, shininess: 6, specular: 0x0c0c0c });   /* Phong = lit per pixel (Lambert lights only the 4 corners of a big wall) */
     }
   }
   if (transp > 0.01) { var m = MATS3[i].clone(); m.transparent = true; m.opacity = 1 - transp; return m; }
@@ -409,7 +409,7 @@ function addCollider(sx, sy, sz, x, y, z, R) {
    they fade in and out so nothing pops. A light that sits INSIDE a visible part would leave that part dark (its faces point away from the light), so:
    small part (a lamp)  -> the part glows in the light's color
    big part (wall, ceiling, floor) -> the light is moved just outside it, toward the side that faces a room */
-var LIGHT_MAX = 8, LIGHT_BOOST = 2.0, LAMP_MAX = 6, mapLights = [], lightPool = [], slots = [], solids = [], lf = 0;
+var LIGHT_MAX = 8, LIGHT_BOOST = 0.9, NUDGE = 1.0, LAMP_MAX = 6, mapLights = [], lightPool = [], slots = [], solids = [], lf = 0;
 function insideSolid(sd, x, y, z) {
   var dx = x - sd.x, dy = y - sd.y, dz = z - sd.z, R = sd.R;
   var lx = R ? R[0] * dx + R[3] * dy + R[6] * dz : dx, ly = R ? R[1] * dx + R[4] * dy + R[7] * dz : dy, lz = R ? R[2] * dx + R[5] * dy + R[8] * dz : dz;
@@ -440,7 +440,7 @@ function unstickLight(l) {
     var loc = R ? [R[0] * dx + R[3] * dy + R[6] * dz, R[1] * dx + R[4] * dy + R[7] * dz, R[2] * dx + R[5] * dy + R[8] * dz] : [dx, dy, dz], best = null;
     for (var a = 0; a < 3; a++) for (var sg = -1; sg <= 1; sg += 2) {
       var dist = H[a] - sg * loc[a], ax = R ? [R[a], R[3 + a], R[6 + a]] : [a === 0 ? 1 : 0, a === 1 ? 1 : 0, a === 2 ? 1 : 0];
-      var d = [ax[0] * sg, ax[1] * sg, ax[2] * sg], c = [l.x + d[0] * (dist + 0.4), l.y + d[1] * (dist + 0.4), l.z + d[2] * (dist + 0.4)];
+      var d = [ax[0] * sg, ax[1] * sg, ax[2] * sg], c = [l.x + d[0] * (dist + NUDGE), l.y + d[1] * (dist + NUDGE), l.z + d[2] * (dist + NUDGE)];
       var open = !solids.some(function(sd) { return rayHitSolid(sd, c[0], c[1], c[2], d[0], d[1], d[2], 30); });   /* nothing within 30 studs = open void, not a room */
       var score = dist + (open ? 2 : 0) + (freeAt(c[0], c[1], c[2]) ? 0 : 5);
       if (!best || score < best.score) best = { score: score, c: c };
@@ -451,7 +451,7 @@ function unstickLight(l) {
 function setupLights(arr) {
   mapLights = arr.map(function(l) { return { x: l[0], y: l[1], z: l[2], c: new THREE.Color(l[3], l[4], l[5]).convertSRGBToLinear(), b: l[6], r: Math.max(1, l[7]) }; });
   mapLights.forEach(unstickLight);
-  for (var i = 0; i < Math.min(LIGHT_MAX, mapLights.length); i++) { var L = new THREE.PointLight(0xffffff, 0, 1, 1.5); scene.add(L); lightPool.push(L); slots.push({ i: -1, cur: 0, out: false }); }
+  for (var i = 0; i < Math.min(LIGHT_MAX, mapLights.length); i++) { var L = new THREE.PointLight(0xffffff, 0, 1, 1); scene.add(L); lightPool.push(L); slots.push({ i: -1, cur: 0, out: false }); }
 }
 function updateLights() {                                  /* every few frames: decide which map lights get a real light */
   if (!lightPool.length) return;
@@ -470,7 +470,7 @@ function updateLights() {                                  /* every few frames: 
 }
 function fadeLights(dt) {                                  /* every frame: smooth intensity */
   for (var k = 0; k < slots.length; k++) {
-    var s = slots[k], l = s.i >= 0 ? mapLights[s.i] : null, tgt = l && !s.out ? l.b * LIGHT_BOOST : 0;
+    var s = slots[k], l = s.i >= 0 ? mapLights[s.i] : null, tgt = l && !s.out ? Math.pow(l.b, 0.7) * LIGHT_BOOST : 0;   /* brightness 1 -> 0.9, 3 -> 1.9, 5 -> 2.8 (no instant white-out) */
     s.cur += (tgt - s.cur) * Math.min(1, dt * 10); if (tgt === 0 && s.cur < 0.02) { s.cur = 0; if (s.out) { s.i = -1; s.out = false; } }
     lightPool[k].intensity = s.cur;
   }
