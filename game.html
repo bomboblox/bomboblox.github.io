@@ -405,20 +405,75 @@ function addCollider(sx, sy, sz, x, y, z, R) {
   }
   colliders.push(c);
 }
-/* point lights from Studio: a fixed pool of LIGHT_MAX real lights is moved onto the lights nearest to the player (a constant number of lights avoids stutter) */
-var LIGHT_MAX = 8, LIGHT_BOOST = 2.0, mapLights = [], lightPool = [], lf = 0;
+/* point lights from Studio. A fixed pool of LIGHT_MAX real lights is moved onto the most relevant map lights (a constant number of lights avoids stutter) and
+   they fade in and out so nothing pops. A light that sits INSIDE a visible part would leave that part dark (its faces point away from the light), so:
+   small part (a lamp)  -> the part glows in the light's color
+   big part (wall, ceiling, floor) -> the light is moved just outside it, toward the side that faces a room */
+var LIGHT_MAX = 8, LIGHT_BOOST = 2.0, LAMP_MAX = 6, mapLights = [], lightPool = [], slots = [], solids = [], lf = 0;
+function insideSolid(sd, x, y, z) {
+  var dx = x - sd.x, dy = y - sd.y, dz = z - sd.z, R = sd.R;
+  var lx = R ? R[0] * dx + R[3] * dy + R[6] * dz : dx, ly = R ? R[1] * dx + R[4] * dy + R[7] * dz : dy, lz = R ? R[2] * dx + R[5] * dy + R[8] * dz : dz;
+  return Math.abs(lx) <= sd.hx && Math.abs(ly) <= sd.hy && Math.abs(lz) <= sd.hz;
+}
+function freeAt(x, y, z) { for (var i = 0; i < solids.length; i++) if (insideSolid(solids[i], x, y, z)) return false; return true; }
+function rayHitSolid(sd, ox, oy, oz, dx, dy, dz, maxT) {       /* does this ray enter the part within maxT studs? (exact, works for thin parts) */
+  var R = sd.R, rx = ox - sd.x, ry = oy - sd.y, rz = oz - sd.z;
+  var o = R ? [R[0] * rx + R[3] * ry + R[6] * rz, R[1] * rx + R[4] * ry + R[7] * rz, R[2] * rx + R[5] * ry + R[8] * rz] : [rx, ry, rz];
+  var d = R ? [R[0] * dx + R[3] * dy + R[6] * dz, R[1] * dx + R[4] * dy + R[7] * dz, R[2] * dx + R[5] * dy + R[8] * dz] : [dx, dy, dz], h = [sd.hx, sd.hy, sd.hz], tmin = -Infinity, tmax = Infinity;
+  for (var a = 0; a < 3; a++) {
+    if (Math.abs(d[a]) < 1e-9) { if (Math.abs(o[a]) > h[a]) return false; }
+    else { var t1 = (-h[a] - o[a]) / d[a], t2 = (h[a] - o[a]) / d[a]; if (t1 > t2) { var q = t1; t1 = t2; t2 = q; } if (t1 > tmin) tmin = t1; if (t2 < tmax) tmax = t2; if (tmin > tmax) return false; }
+  }
+  return tmax >= 0 && tmin <= maxT;
+}
+function unstickLight(l) {
+  for (var pass = 0; pass < 3; pass++) {
+    var cont = solids.filter(function(sd) { return insideSolid(sd, l.x, l.y, l.z); });
+    cont.forEach(function(sd) {
+      if (Math.max(sd.hx, sd.hy, sd.hz) * 2 <= LAMP_MAX && !sd.lit) {
+        var m = sd.mesh.material = sd.mesh.material.clone(); m.emissive = l.c.clone(); m.emissiveIntensity = 0.9; if (m.map) m.emissiveMap = m.map; sd.lit = true;
+      }
+    });
+    var big = null; cont.forEach(function(sd) { if (!big && Math.max(sd.hx, sd.hy, sd.hz) * 2 > LAMP_MAX) big = sd; });
+    if (!big) return;
+    var R = big.R, dx = l.x - big.x, dy = l.y - big.y, dz = l.z - big.z, H = [big.hx, big.hy, big.hz];
+    var loc = R ? [R[0] * dx + R[3] * dy + R[6] * dz, R[1] * dx + R[4] * dy + R[7] * dz, R[2] * dx + R[5] * dy + R[8] * dz] : [dx, dy, dz], best = null;
+    for (var a = 0; a < 3; a++) for (var sg = -1; sg <= 1; sg += 2) {
+      var dist = H[a] - sg * loc[a], ax = R ? [R[a], R[3 + a], R[6 + a]] : [a === 0 ? 1 : 0, a === 1 ? 1 : 0, a === 2 ? 1 : 0];
+      var d = [ax[0] * sg, ax[1] * sg, ax[2] * sg], c = [l.x + d[0] * (dist + 0.4), l.y + d[1] * (dist + 0.4), l.z + d[2] * (dist + 0.4)];
+      var open = !solids.some(function(sd) { return rayHitSolid(sd, c[0], c[1], c[2], d[0], d[1], d[2], 30); });   /* nothing within 30 studs = open void, not a room */
+      var score = dist + (open ? 2 : 0) + (freeAt(c[0], c[1], c[2]) ? 0 : 5);
+      if (!best || score < best.score) best = { score: score, c: c };
+    }
+    l.x = best.c[0]; l.y = best.c[1]; l.z = best.c[2];
+  }
+}
 function setupLights(arr) {
   mapLights = arr.map(function(l) { return { x: l[0], y: l[1], z: l[2], c: new THREE.Color(l[3], l[4], l[5]).convertSRGBToLinear(), b: l[6], r: Math.max(1, l[7]) }; });
-  for (var i = 0; i < Math.min(LIGHT_MAX, mapLights.length); i++) { var L = new THREE.PointLight(0xffffff, 0, 1, 1.5); scene.add(L); lightPool.push(L); }
+  mapLights.forEach(unstickLight);
+  for (var i = 0; i < Math.min(LIGHT_MAX, mapLights.length); i++) { var L = new THREE.PointLight(0xffffff, 0, 1, 1.5); scene.add(L); lightPool.push(L); slots.push({ i: -1, cur: 0, out: false }); }
 }
-function updateLights() {
+function updateLights() {                                  /* every few frames: decide which map lights get a real light */
   if (!lightPool.length) return;
-  var list = mapLights.map(function(l) { var d = Math.hypot(l.x - pos.x, l.y - pos.y - 3, l.z - pos.z); return { l: l, k: d - l.r }; });
+  var list = mapLights.map(function(l, i) { return { i: i, k: Math.hypot(l.x - pos.x, l.y - pos.y - 3, l.z - pos.z) - l.r }; });
   list.sort(function(a, b) { return a.k - b.k; });
-  lightPool.forEach(function(L, i) {
-    var e = list[i]; if (!e) { L.intensity = 0; return; }
-    L.position.set(e.l.x, e.l.y, e.l.z); L.color.copy(e.l.c); L.distance = e.l.r; L.intensity = e.l.b * LIGHT_BOOST;
+  var want = list.slice(0, lightPool.length).map(function(e) { return e.i; });
+  slots.forEach(function(s) { if (s.i >= 0) s.out = want.indexOf(s.i) < 0; });
+  want.forEach(function(w) {
+    if (slots.some(function(s) { return s.i === w; })) return;
+    for (var k = 0; k < slots.length; k++) {
+      var s = slots[k]; if (s.i >= 0 && !(s.out && s.cur < 0.02)) continue;
+      var l = mapLights[w], L = lightPool[k]; s.i = w; s.out = false; s.cur = 0;
+      L.position.set(l.x, l.y, l.z); L.color.copy(l.c); L.distance = l.r; return;
+    }
   });
+}
+function fadeLights(dt) {                                  /* every frame: smooth intensity */
+  for (var k = 0; k < slots.length; k++) {
+    var s = slots[k], l = s.i >= 0 ? mapLights[s.i] : null, tgt = l && !s.out ? l.b * LIGHT_BOOST : 0;
+    s.cur += (tgt - s.cur) * Math.min(1, dt * 10); if (tgt === 0 && s.cur < 0.02) { s.cur = 0; if (s.out) { s.i = -1; s.out = false; } }
+    lightPool[k].intensity = s.cur;
+  }
 }
 function buildMap(data) {
   var grp = new THREE.Group(); scene.add(grp);
@@ -434,7 +489,7 @@ function buildMap(data) {
     if (shape === 1 || shape === 2) scaleUV(geo, Math.max(sx, sy, sz) / TILE * 1.5);
     var m = new THREE.Mesh(geo, getMat(mat, tr)); m.matrixAutoUpdate = false; m.castShadow = tr < 0.5; m.receiveShadow = true;
     m.matrix.set(R ? R[0] : 1, R ? R[1] : 0, R ? R[2] : 0, x, R ? R[3] : 0, R ? R[4] : 1, R ? R[5] : 0, y, R ? R[6] : 0, R ? R[7] : 0, R ? R[8] : 1, z, 0, 0, 0, 1);
-    m.updateMatrixWorld(true); grp.add(m);
+    m.updateMatrixWorld(true); grp.add(m); solids.push({ x: x, y: y, z: z, hx: sx / 2, hy: sy / 2, hz: sz / 2, R: R, mesh: m });
   });
   if (data.spawn) spawn = data.spawn;
   if (data.lights && data.lights.length) setupLights(data.lights);
@@ -590,7 +645,7 @@ var last = performance.now();
   requestAnimationFrame(loop);
   var dt = Math.min(0.05, (t - last) / 1000); last = t;
   if (me) { stepMe(dt); stepRemotes(dt); }
-  stepCam(dt); if (++lf % 8 === 0) updateLights(); updateBubbles(); ren.render(scene, cam);
+  stepCam(dt); if (++lf % 8 === 0) updateLights(); fadeLights(dt); updateBubbles(); ren.render(scene, cam);
 })(last);
 </script>
 </body>
