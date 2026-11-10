@@ -58,7 +58,15 @@ body.touch #clog{height:100px}
 #resultBox{position:fixed;left:50%;top:32%;transform:translateX(-50%);background:rgba(17,17,17,.94);border:3px solid #ff6a00;padding:24px 44px;font-size:44px;font-weight:900;color:#fff;z-index:9;display:none;text-align:center;pointer-events:none}
 #blackout{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .15s;z-index:7}
 #blackout.on{opacity:1}
-#xhair{position:fixed;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border:2px solid #fff;border-radius:50%;opacity:.85;display:none;pointer-events:none;z-index:3}
+#xhair{position:fixed;left:50%;top:50%;width:0;height:0;display:none;pointer-events:none;z-index:3}
+#xhair i{position:absolute;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.55);transition:transform .12s ease-out,background .1s}
+#xhair .u{left:-1px;top:-15px;width:2px;height:8px}
+#xhair .d{left:-1px;top:7px;width:2px;height:8px}
+#xhair .l{top:-1px;left:-15px;width:8px;height:2px}
+#xhair .r{top:-1px;left:7px;width:8px;height:2px}
+#xhair b{position:absolute;left:-2px;top:-2px;width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.55);transition:background .1s}
+#xhair.fire .u{transform:translateY(-7px)}#xhair.fire .d{transform:translateY(7px)}#xhair.fire .l{transform:translateX(-7px)}#xhair.fire .r{transform:translateX(7px)}
+#xhair.hit i,#xhair.hit b{background:#ff3b3b}
 #toolbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:6px;z-index:3}
 #tslot{position:relative;width:68px;height:68px;background:rgba(17,17,17,.88);border:2px solid #555;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center}
 #tslot.on{border-color:#ff6a00;background:rgba(58,35,8,.92)}
@@ -76,6 +84,43 @@ body.touch #clog{height:100px}
 #tbtn{width:64px;height:64px;right:calc(148px + env(safe-area-inset-right));bottom:calc(140px + env(safe-area-inset-bottom))}
 body.touch.armed #abtn{display:flex}
 body.touch.knife #tbtn{display:flex}
+
+/* ---------- polish ---------- */
+:root{--acc:#ff6a00;--panel:rgba(14,15,19,.84)}
+html,body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif}
+#join{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:radial-gradient(ellipse at center,rgba(46,26,10,.72),rgba(0,0,0,.92))}
+#join .box{border-radius:16px;border:1px solid rgba(255,106,0,.55);background:#17181c;box-shadow:0 18px 60px rgba(0,0,0,.6);padding:28px;width:320px}
+#join h2{font-size:26px;letter-spacing:.3px}
+#join input{border-radius:10px;height:44px}
+#join button{border-radius:10px;height:44px;transition:transform .1s,background .15s}
+#join button:active{transform:scale(.97)}
+#menu{backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#menu .mbox{border-radius:16px;background:#17181c;box-shadow:0 18px 60px rgba(0,0,0,.6)}
+#menu button{border-radius:10px;transition:background .15s,transform .1s}
+#menu button:active{transform:scale(.98)}
+#menubtn{border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+#clog{border-radius:10px 10px 0 0;text-shadow:0 1px 2px #000;background:rgba(14,15,19,.55)}
+#cin{border-radius:0 0 10px 10px}
+#mmtop{border:0;border-radius:12px;padding:8px 22px 12px;background:var(--panel);box-shadow:0 4px 18px rgba(0,0,0,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:17px;letter-spacing:.3px;text-align:center;overflow:hidden}
+#mmbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.12)}
+#mmfill{display:block;height:100%;width:0;background:var(--acc);transition:width .3s linear}
+#rolebadge{position:fixed;top:60px;left:50%;transform:translateX(-50%);display:none;z-index:3;pointer-events:none;background:var(--panel);border-radius:999px;padding:4px 16px;font-size:14px;font-weight:700;box-shadow:0 3px 12px rgba(0,0,0,.35)}
+#roleBox{font-size:clamp(34px,8vw,64px);letter-spacing:1px;animation:popin .35s ease-out}
+#resultBox{border-radius:18px;border-width:2px;box-shadow:0 18px 60px rgba(0,0,0,.6);animation:popc .35s ease-out;font-size:clamp(26px,6vw,44px)}
+@keyframes popin{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+@keyframes popc{from{transform:translateX(-50%) scale(.85);opacity:0}to{transform:translateX(-50%);opacity:1}}
+#tslot{border-radius:14px;border:2px solid rgba(255,255,255,.22);box-shadow:0 6px 18px rgba(0,0,0,.45);transition:border-color .15s,box-shadow .15s,transform .1s}
+#tslot:active{transform:scale(.95)}
+#tslot.on{border-color:var(--acc);box-shadow:0 0 0 2px rgba(255,106,0,.35),0 0 22px rgba(255,106,0,.45)}
+#tslot.pulse{animation:pulse .7s ease-out}
+@keyframes pulse{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:none}}
+#tcd{background:none;text-shadow:0 1px 4px #000}
+#thint{border-radius:8px;background:rgba(14,15,19,.8)}
+#toast{position:fixed;left:50%;bottom:118px;transform:translateX(-50%);background:var(--panel);border:1px solid rgba(255,106,0,.6);border-radius:10px;padding:8px 16px;font-size:14px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:4;white-space:nowrap}
+#toast.on{opacity:1}
+#specbar,#specbtn{border-radius:12px}
+body.armed canvas{cursor:crosshair}
+#blackout{display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:#ff5a5a;letter-spacing:1px;transition:opacity .3s}
 </style>
 </head>
 <body>
@@ -87,17 +132,19 @@ body.touch.knife #tbtn{display:flex}
   <h2>Menu</h2>
   <div id="plist"></div>
   <div id="diag"><div id="status">Starting...</div><div id="mapinfo"></div><div id="hatinfo"></div></div>
-  <div class="hint">WASD / arrows: move &middot; Space: jump<br>Hold mouse + drag: look &middot; Scroll: zoom<br>Enter or /: chat &middot; Esc: menu<br>Scroll all the way in: first person</div>
+  <div class="hint">WASD / arrows: move &middot; Space: jump<br>Hold mouse + drag: look &middot; Scroll: zoom<br>Click: stab / shoot &middot; T: throw knife &middot; 1: equip<br>Enter or /: chat &middot; Esc: menu<br>Scroll all the way in: first person</div>
   <button id="mres" class="pri" type="button">Resume</button>
   <button id="mreset" type="button">Reset character</button>
   <button id="mleave" class="red" type="button">Leave game</button>
 </div></div>
 
-<div id="mmtop"></div>
+<div id="mmtop"><span id="mmtxt"></span><div id="mmbar"><i id="mmfill"></i></div></div>
+<div id="rolebadge"></div>
+<div id="toast"></div>
 <div id="roleBox"></div>
 <div id="resultBox"></div>
 <div id="blackout"></div>
-<div id="xhair"></div>
+<div id="xhair"><i class="u"></i><i class="d"></i><i class="l"></i><i class="r"></i><b></b></div>
 <div id="toolbar"><div id="thint">T to throw</div><div id="tslot"><img id="ticon" alt=""><span id="tlabel"></span><span id="tkey">1</span><div id="tcd"></div></div></div>
 <div id="specbtn">Spectate</div>
 <div id="specbar"><button id="sprev" type="button">&lt;</button><span id="spname"></span><button id="snext" type="button">&gt;</button><button id="sstop" type="button">Stop</button></div>
@@ -136,6 +183,7 @@ var scene = new THREE.Scene();
 scene.background = lin(0xd6e8f6);
 scene.fog = new THREE.Fog(lin(0xd6e8f6), 170, 460);
 var cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 1000);
+scene.add(cam);          /* in the scene so the first-person weapon can ride on it */
 var ren = new THREE.WebGLRenderer({ antialias: true });
 ren.setPixelRatio(Math.min(devicePixelRatio, 2));
 ren.outputEncoding = THREE.sRGBEncoding;
@@ -217,13 +265,25 @@ function makeAvatar(name, color) {
   if (HAT) { var hat = HAT.clone(true); hat.position.y = HAT_Y; hat.scale.setScalar(HAT_SCALE); inner.add(hat); }
   function limb(c, x, y) { var p = new THREE.Group(); p.position.set(x, y, 0); p.add(bbox(1, 2, 1, c, 0, -1, 0)); inner.add(p); return p; }
   var p = { g: g, inner: inner, torso: torso, aL: limb(0xf5cd30, -1.5, 4), aR: limb(0xf5cd30, 1.5, 4), lL: limb(0xa3c76d, -0.5, 2), lR: limb(0xa3c76d, 0.5, 2), amp: 0, ph: 0, name: name };
-  p.knifeM = makeKnifeMesh(); p.knifeM.visible = false; p.aR.add(p.knifeM);
-  p.gunM = makeGunMesh(); p.gunM.visible = false; p.aR.add(p.gunM);
-  p.tool = null; p.atk = 0;
+  p.knifeM = makeKnifeMesh(); p.knifeM.visible = false; p.knifeM.position.y = -2; p.aR.add(p.knifeM);     /* both weapons are built around the hand */
+  p.gunM = makeGunMesh(); p.gunM.visible = false; p.gunM.position.y = -2; p.aR.add(p.gunM);
+  p.tool = null; p.atk = 0; p.atkD = 0.4; p.atkTool = null; p.aimP = 0; p.tap = 0;
   g.add(nameTag(name));
   p.shadow = new THREE.Mesh(new THREE.CircleGeometry(1.3, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
   p.shadow.rotation.x = -Math.PI / 2; p.shadow.position.y = 0.04;
   p.shadow.visible = false; scene.add(g); scene.add(p.shadow); return p;
+}
+function sst(t) { return t * t * (3 - 2 * t); }
+function seg(u, a, b) { return Math.max(0, Math.min(1, (u - a) / (b - a))); }
+function poseKnife(u) {                                /* wind up, slash forward, recover. up = arm lift (rad), tilt = how far the blade leans forward (rad) */
+  if (u < 0) return { up: 0, tilt: 0.15 };
+  var w = sst(seg(u, 0, 0.3)), s = sst(seg(u, 0.3, 0.5)), r = sst(seg(u, 0.5, 1));
+  return { up: 0.8 * w - 1.5 * s + 0.7 * r, tilt: 0.15 - 0.6 * w + 2.05 * s - 1.45 * r };
+}
+function poseGun(u) {                                  /* sharp kick up, then settle back */
+  if (u < 0) return { up: 0, kick: 0 };
+  var k = u < 0.12 ? u / 0.12 : 1 - sst(seg(u, 0.12, 1));
+  return { up: 0.6 * k, kick: k };
 }
 function animate(p, dt, moving, y, air) {
   p.amp += ((moving ? 0.9 : 0) - p.amp) * Math.min(1, dt * 12);
@@ -232,10 +292,15 @@ function animate(p, dt, moving, y, air) {
   var s = Math.sin(p.ph) * p.amp, a = p.airF, b = 1 - a;
   p.aL.rotation.x = s * b - 2.5 * a; p.aR.rotation.x = -s * b - 2.5 * a;               /* jump: both arms swing up */
   p.lL.rotation.x = -s * b - 0.35 * a; p.lR.rotation.x = s * b + 0.3 * a;               /* jump: legs hang a little apart */
-  if (p.tool) {                                                                         /* holding a tool: right arm points forward, and swings when attacking */
-    var st = p.atk > 0 ? Math.sin((1 - p.atk / 0.3) * Math.PI) : 0;
-    p.aR.rotation.x = -1.45 - (p.tool === 'knife' ? 0.9 : 0.35) * st;
-  }
+  var pose = p.tool || (p.atk > 0 ? p.atkTool : null);                                  /* holding a weapon (or just released one): the arm aims where the player aims */
+  if (pose) {
+    var u = p.atk > 0 ? 1 - p.atk / (p.atkD || 0.4) : -1, up = 0, tilt = 0.15, kick = 0;
+    if (pose === 'knife') { var kp = poseKnife(u); up = kp.up; tilt = kp.tilt; } else { var gp = poseGun(u); up = gp.up; kick = gp.kick; }
+    p.aR.rotation.x = -Math.PI / 2 - (p.aimP || 0) - up;
+    p.knifeM.rotation.x = Math.PI + tilt - p.aR.rotation.x;                              /* cancels the arm's turn: the blade always points up (tilted forward when slashing) */
+    p.gunM.position.y = -2 + 0.35 * kick;                                                /* the gun slides back with the kick */
+    if (p.gunM.userData.flash) p.gunM.userData.flash.visible = pose === 'gun' && u >= 0 && u < 0.2;
+  } else if (p.gunM.userData.flash) p.gunM.userData.flash.visible = false;
   if (p.atk > 0) p.atk = Math.max(0, p.atk - dt);
   p.shadow.position.x = p.g.position.x; p.shadow.position.z = p.g.position.z;
   var k = 1 / (1 + y * 0.12); p.shadow.scale.set(k, k, 1); p.shadow.material.opacity = 0.35 * k;
@@ -276,7 +341,7 @@ cv.addEventListener('pointermove', function(e) {
     if (lastPinch) dist = Math.max(0.5, Math.min(45, dist - (d - lastPinch) * 0.06)); lastPinch = d; return;
   }
   var k = e.pointerType === 'touch' ? 0.009 : 0.006;
-  yaw -= (e.clientX - p.x) * k; pitch = Math.max(dist <= 1 ? -1.45 : 0.05, Math.min(1.45, pitch + (e.clientY - p.y) * k)); p.x = e.clientX; p.y = e.clientY;
+  yaw -= (e.clientX - p.x) * k; pitch = Math.max(dist <= 1 ? -1.45 : -0.9, Math.min(1.45, pitch + (e.clientY - p.y) * k)); p.x = e.clientX; p.y = e.clientY;
 });
 cv.addEventListener('wheel', function(e) { e.preventDefault(); dist = Math.max(0.5, Math.min(45, dist + e.deltaY * 0.02)); }, { passive: false });
 cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
@@ -292,9 +357,9 @@ function stepMe(dt) {
     var dx = fx * f + (-fz) * r, dz = fz * f + fx * r, len = Math.hypot(dx, dz);
     dx /= len; dz /= len;
     pos.x += dx * WALK * mag * dt; pos.z += dz * WALK * mag * dt;
-    var d = Math.atan2(dx, dz) - rot; d = Math.atan2(Math.sin(d), Math.cos(d));
-    rot += d * Math.min(1, dt * 14);
+    if (performance.now() >= faceUntil) { var d = Math.atan2(dx, dz) - rot; d = Math.atan2(Math.sin(d), Math.cos(d)); rot += d * Math.min(1, dt * 14); }
   }
+  if (performance.now() < faceUntil) { var fa = lookDir(), da = Math.atan2(fa.x, fa.z) - rot; da = Math.atan2(Math.sin(da), Math.cos(da)); rot += da * Math.min(1, dt * 22); }
   pushOut();
   if (keys.Space && onGround && !spec.on) { vy = JUMP; onGround = false; }
   var py = pos.y, v0 = vy; vy -= GRAV * dt; pos.y += (v0 + vy) / 2 * dt;      /* exact for constant gravity */
@@ -315,18 +380,30 @@ function rayBox(c, ox, oy, oz, dx, dy, dz) {      /* distance along the ray to w
   }
   return tmin >= 0 ? tmin : Infinity;
 }
+var shoulder = 0;
 function stepCam(dt) {
+  dt = dt || 0.016;
   var tx = pos.x, ty = pos.y + 4, tz = pos.z, stg = spec.on ? specTarget() : null;
   if (stg !== null && remotes[stg]) { var sg = remotes[stg].g.position; tx = sg.x; ty = sg.y + 4; tz = sg.z; } else if (spec.on) spec.on = false;
-  var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch), allowed = dist;
   fp = dist <= 1 && !spec.on; if (me) me.g.visible = !fp;                       /* first person: camera in the head, your avatar is hidden */
+  if (!fp && pitch < -0.9) pitch = -0.9;
+  var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch), allowed = dist;
   if (fp) {
     var ey = pos.y + 4.7; cam.position.set(tx, ey, tz); cam.lookAt(tx - dx, ey - dy, tz - dz);
     sun.position.set(tx + 60, ty + 100, tz + 40); sun.target.position.set(tx, ty - 4, tz); sky.position.copy(cam.position); return;
   }
+  /* armed: the camera slides over your right shoulder so the crosshair is NOT on your own body. Whatever is under the crosshair is what you hit. */
+  var armed = !spec.on && !!tool.type && tool.equipped;
+  shoulder += ((armed ? 1 : 0) - shoulder) * Math.min(1, dt * 8);
+  if (shoulder > 0.01) {
+    var rl = Math.hypot(dx, dz) || 1, rx = dz / rl, rz = -dx / rl, lim = 2.1;
+    if (hasMap) for (var j = 0; j < colliders.length; j++) { var tt = rayBox(colliders[j], tx, ty, tz, rx, 0, rz); if (tt - 0.8 < lim) lim = tt - 0.8; }   /* never push the camera into a wall */
+    lim = Math.max(0, lim) * shoulder; tx += rx * lim; tz += rz * lim; ty += 0.5 * shoulder;
+  }
   if (hasMap) for (var i = 0; i < colliders.length; i++) { var t = rayBox(colliders[i], tx, ty, tz, dx, dy, dz); if (t < allowed) allowed = t; }
+  if (dy < -0.001 && ty > 0.7) allowed = Math.min(allowed, (ty - 0.6) / -dy);      /* looking up: the camera comes closer instead of going under the floor */
   allowed = Math.max(1.2, allowed - 0.5);                          /* stop just in front of the wall */
-  if (allowed < camD) camD = allowed; else camD += (allowed - camD) * Math.min(1, (dt || 0.016) * 6);
+  if (allowed < camD) camD = allowed; else camD += (allowed - camD) * Math.min(1, dt * 6);
   cam.position.set(tx + dx * camD, Math.max(0.6, ty + dy * camD), tz + dz * camD);
   cam.lookAt(tx, ty, tz);
   sun.position.set(tx + 60, ty + 100, tz + 40); sun.target.position.set(tx, ty - 4, tz); sky.position.copy(cam.position);
@@ -389,10 +466,11 @@ function mine() { return !!sref && !!lastSlots[slot] && lastSlots[slot].sid === 
 function sendMe() {
   if (!mine()) return;
   var now = Date.now(), w = meMoving ? 1 : 0, j = meAir ? 1 : 0, h = curHeld(), tl = h === 'knife' ? 'k' : h === 'gun' ? 'g' : '';
-  var moved = Math.abs(pos.x - sent.x) + Math.abs(pos.y - sent.y) + Math.abs(pos.z - sent.z) + Math.abs(rot - sent.r) > 0.01 || w !== sent.w || j !== sent.j || tl !== sent.tl || myAc !== sent.ac;
+  var ap = h ? +Math.max(-1.2, Math.min(1.2, -pitch)).toFixed(2) : 0;
+  var moved = Math.abs(pos.x - sent.x) + Math.abs(pos.y - sent.y) + Math.abs(pos.z - sent.z) + Math.abs(rot - sent.r) > 0.01 || w !== sent.w || j !== sent.j || tl !== sent.tl || myAc !== sent.ac || Math.abs(ap - (sent.ap || 0)) > 0.03;
   if (!moved && now - sent.t < 1500) return;
-  sent = { x: pos.x, y: pos.y, z: pos.z, r: rot, t: now, w: w, j: j, tl: tl, ac: myAc };
-  sref.update({ x: +pos.x.toFixed(2), y: +pos.y.toFixed(2), z: +pos.z.toFixed(2), r: +rot.toFixed(2), w: w, j: j, tl: tl, ac: myAc });
+  sent = { x: pos.x, y: pos.y, z: pos.z, r: rot, t: now, w: w, j: j, tl: tl, ac: myAc, ap: ap };
+  sref.update({ x: +pos.x.toFixed(2), y: +pos.y.toFixed(2), z: +pos.z.toFixed(2), r: +rot.toFixed(2), w: w, j: j, tl: tl, ac: myAc, ap: ap });
 }
 function syncRemotes(v) {
   var live = {};
@@ -403,8 +481,9 @@ function syncRemotes(v) {
     if (p && (p.name !== d.n || p.sid !== d.sid)) { removeAvatar(p); p = null; }
     if (!p) { p = remotes[i] = makeAvatar(d.n.slice(0, 16), COLORS[i]); p.sid = d.sid; p.g.position.set(d.x || 0, d.y || 0, d.z || 0); p.rot = d.r || 0; }
     p.tx = d.x || 0; p.ty = d.y || 0; p.tz = d.z || 0; p.tr = d.r || 0; p.tw = d.w === 1; p.tj = d.j === 1;
-    var want = d.tl === 'k' ? 'knife' : d.tl === 'g' ? 'gun' : null; if (p.tool !== want) setTool(p, want);
-    if (p.ac !== undefined && (d.ac || 0) !== p.ac) p.atk = 0.3;                       /* the other player attacked: swing */
+    var want = d.tl === 'k' ? 'knife' : d.tl === 'g' ? 'gun' : null, prevT = p.tool; if (p.tool !== want) setTool(p, want);
+    p.tap = typeof d.ap === 'number' ? d.ap : 0;
+    if (p.ac !== undefined && (d.ac || 0) !== p.ac) { p.atkTool = want || prevT || 'knife'; p.atkD = p.atkTool === 'gun' ? 0.5 : 0.38; p.atk = p.atkD; }   /* the other player attacked (or threw): play the same swing */
     p.ac = d.ac || 0;
   });
   drawList();
@@ -415,6 +494,7 @@ function stepRemotes(dt) {
     var p = remotes[i], g = p.g.position;
     g.x += (p.tx - g.x) * k; g.y += (p.ty - g.y) * k; g.z += (p.tz - g.z) * k;
     var d = Math.atan2(Math.sin(p.tr - p.rot), Math.cos(p.tr - p.rot)); p.rot += d * k; p.inner.rotation.y = p.rot;
+    p.aimP = (p.aimP || 0) + ((p.tap || 0) - (p.aimP || 0)) * k;
     animate(p, dt, p.tw && !p.tj, g.y, p.tj);                      /* walking / jumping as the other player reports it (works at any height) */
   });
 }
@@ -728,10 +808,10 @@ addEventListener('touchstart', enableTouch, { once: true, passive: true });
    One player (the lowest slot) acts as the host and runs the rounds; all state lives in the Realtime Database under game/mm,
    so if the host leaves, the next player takes over. Players ask for kills / pickups through game/mmev (the host decides),
    and game/mmfx only carries visuals (thrown knife, bullet tracer). */
-var INTERMISSION_SEC = 10, ROUND_SEC = 300, MIN_PLAYERS = 2;       /* timings: change here */
+var INTERMISSION_SEC = 20, ROUND_SEC = 300, MIN_PLAYERS = 2, ARM_DELAY = 4500;       /* timings: change here. ARM_DELAY = weapons are handed out when the role reveal is over */
 var STAB_CD = 300, THROW_CD = 3000, GUN_CD = 4000, STAB_REACH = 3.2;
 var mm = {}, lobbySpawn = null, tpBlocks = [], lastPos = {}, ending = false, roleToken = 0, lastDeath = 0, pickupAt = 0, inRoundFlag = false, resTimer = null, boTimer = null;
-var tool = { type: null, equipped: true, atkAt: 0, throwUntil: 0, gunUntil: 0 }, projectiles = [], tracers = [], orb = null, myAc = 0, spec = { on: false, i: 0 };
+var faceUntil = 0, tool = { type: null, equipped: true, atkAt: 0, throwUntil: 0, gunUntil: 0, rel: 0 }, projectiles = [], tracers = [], orb = null, myAc = 0, spec = { on: false, i: 0 };
 function el(i) { return document.getElementById(i); }
 function rk(i) { return 'p' + i; }
 function srvNow() { return Date.now() + srvOff; }
@@ -763,10 +843,10 @@ function startRound(live, now) {
   var sh = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
   roles[rk(m)] = 'murderer'; roles[rk(sh)] = 'sheriff'; pool.forEach(function(i) { roles[rk(i)] = 'innocent'; });
   live.forEach(function(i) { alive[rk(i)] = true; });
-  mmUpdate({ phase: 'round', rid: (mm.rid || 0) + 1, endsAt: now + ROUND_SEC * 1000, roles: roles, alive: alive, holder: sh, gun: null, result: null });
+  mmUpdate({ phase: 'round', rid: (mm.rid || 0) + 1, endsAt: now + ROUND_SEC * 1000, armAt: now + ARM_DELAY, roles: roles, alive: alive, holder: sh, gun: null, result: null });
 }
 function endRound(text) {
-  mmUpdate({ phase: 'lobby', endsAt: srvNow() + INTERMISSION_SEC * 1000, roles: null, alive: null, holder: null, gun: null, result: { id: (mm.rid || 0) + '_' + Date.now(), text: text, at: firebase.database.ServerValue.TIMESTAMP } });
+  mmUpdate({ phase: 'lobby', endsAt: srvNow() + INTERMISSION_SEC * 1000, roles: null, alive: null, holder: null, gun: null, armAt: null, result: { id: (mm.rid || 0) + '_' + Date.now(), text: text, at: firebase.database.ServerValue.TIMESTAMP } });
 }
 function hostTick() {
   if (!isHost()) return;
@@ -799,14 +879,14 @@ function hostEvent(sn) {
   var roles = mm.roles || {}, alive = copy(mm.alive), by = rk(e.by), tg = rk(e.target), up = {}, text = null;
   function dropGun(i) { var q = lastPos[i] || { x: 0, y: 0, z: 0 }; up.gun = { x: q.x, y: q.y + 1, z: q.z }; up.holder = null; }
   if (e.t === 'pickup') {
-    if (alive[by] !== true || roles[by] === 'murderer' || !mm.gun) return;
+    if (alive[by] !== true || roles[by] === 'murderer' || !mm.gun || srvNow() < (mm.armAt || 0) - 300) return;
     mmUpdate({ holder: e.by, gun: null }); return;
   }
   if (e.t === 'die') {
     if (alive[by] !== true) return; alive[by] = false;
     if (mm.holder === e.by) dropGun(e.by);
   } else if (e.t === 'kill') {
-    if (alive[by] !== true || alive[tg] !== true || e.by === e.target) return;
+    if (alive[by] !== true || alive[tg] !== true || e.by === e.target || srvNow() < (mm.armAt || 0) - 300) return;
     if (e.w === 'gun') {
       if (mm.holder !== e.by) return;
       alive[tg] = false;
@@ -849,7 +929,7 @@ function onMM(cur) {
 function roundStarted() {
   inRoundFlag = true; spec.on = false;
   teleport(tpBlocks.length ? tpBlocks[Math.floor(Math.random() * tpBlocks.length)] : (lobbySpawn || spawn), 2.5);   /* a random TeleportBlock */
-  tool.equipped = true; tool.atkAt = 0; tool.throwUntil = 0; tool.gunUntil = 0;
+  tool.equipped = true; tool.atkAt = 0; tool.throwUntil = 0; tool.gunUntil = 0; tool.rel = 0; faceUntil = 0;
   roleReveal(myRole());
 }
 function roundEnded() {
@@ -860,9 +940,9 @@ function roundEnded() {
 function iDied() {
   if (Date.now() - lastDeath < 1500) return; lastDeath = Date.now();
   roleToken++; el('roleBox').style.display = 'none';
-  blackout(2000); respawn();                                         /* black screen for 2 seconds, you wake up in the lobby */
+  blackout(2000, 'You died'); respawn();                                         /* black screen for 2 seconds, you wake up in the lobby */
 }
-function blackout(ms) { el('blackout').className = 'on'; clearTimeout(boTimer); boTimer = setTimeout(function() { el('blackout').className = ''; }, ms); }
+function blackout(ms, txt) { var b = el('blackout'); b.textContent = txt || ''; b.className = 'on'; clearTimeout(boTimer); boTimer = setTimeout(function() { b.className = ''; }, ms); }
 function showResult(text) { var b = el('resultBox'); b.textContent = text; b.style.display = 'block'; clearTimeout(resTimer); resTimer = setTimeout(function() { b.style.display = 'none'; }, 4500); }
 function roleReveal(role) {                                          /* "Role:" flickers through the roles, slows down, then lands on yours */
   var box = el('roleBox'), tok = ++roleToken, fin = role === 'murderer' ? 'Murderer' : role === 'sheriff' ? 'Sheriff' : 'Innocent';
@@ -878,42 +958,49 @@ function roleReveal(role) {                                          /* "Role:" 
 }
 
 /* ---------- tools: knife (murderer) and gun (sheriff / whoever picks it up) ---------- */
-function toolType() { if (!amAlive()) return null; if (myRole() === 'murderer') return 'knife'; return mm.holder === slot ? 'gun' : null; }
-function curHeld() { if (!tool.type || !tool.equipped) return null; if (tool.type === 'knife' && performance.now() < tool.throwUntil) return null; return tool.type; }
+function toolType() { if (!amAlive() || srvNow() < (mm.armAt || 0)) return null; if (myRole() === 'murderer') return 'knife'; return mm.holder === slot ? 'gun' : null; }   /* weapons only appear once the role reveal is over */
+function curHeld() { if (!tool.type || !tool.equipped) return null; var n = performance.now(); if (tool.type === 'knife' && n < tool.throwUntil && n >= (tool.rel || 0)) return null; return tool.type; }   /* the knife leaves your hand when it is released */
 function setTool(p, t) { p.tool = t; p.knifeM.visible = t === 'knife'; p.gunM.visible = t === 'gun'; }
 function applyHand() { var h = curHeld(); if (me && me.tool !== h) setTool(me, h); }
+var toastT = null, lastCd = '', xhT = null;
+function toast(msg) { var t = el('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function() { t.classList.remove('on'); }, 2800); }
 function refreshTool() {
   var t = toolType();
   if (t !== tool.type) {
-    tool.type = t; tool.equipped = true; tool.throwUntil = 0; tool.gunUntil = 0;
+    tool.type = t; tool.equipped = true; tool.throwUntil = 0; tool.gunUntil = 0; tool.rel = 0; lastCd = '';
     var ic = el('ticon'), lb = el('tlabel');
-    if (t) { ic.style.display = 'block'; lb.textContent = ''; ic.onerror = function() { ic.style.display = 'none'; lb.textContent = t === 'knife' ? 'KNIFE' : 'GUN'; }; ic.src = (t === 'knife' ? 'knifeicon.png' : 'gunicon.png') + '?v=1'; }
+    if (t) {
+      ic.style.display = 'block'; lb.textContent = ''; ic.onerror = function() { ic.style.display = 'none'; lb.textContent = t === 'knife' ? 'KNIFE' : 'GUN'; }; ic.src = (t === 'knife' ? 'knifeicon.png' : 'gunicon.png') + '?v=1';
+      toast(t === 'knife' ? 'You got the Knife!  Click to stab, T to throw' : 'You got the Gun!  Click to shoot');
+      var s = el('tslot'); s.classList.remove('pulse'); void s.offsetWidth; s.classList.add('pulse');
+    }
   }
   applyHand();
 }
 function toggleEquip() { if (!tool.type || spec.on) return; tool.equipped = !tool.equipped; applyHand(); }
 function lookDir() { return { x: -Math.sin(yaw) * Math.cos(pitch), y: -Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) }; }
-function swing() { me.atk = 0.3; myAc++; }
+function swing(kind) { me.atkTool = kind; me.atkD = kind === 'gun' ? 0.5 : 0.38; me.atk = me.atkD; myAc++; }
 function nearestTarget(reach) {                                      /* someone you are basically touching, in front of you */
   var best = null, bd = 1e9;
   targets().forEach(function(i) {
     var g = remotes[i].g.position, dx = g.x - pos.x, dz = g.z - pos.z, d = Math.hypot(dx, dz);
     if (d > reach || Math.abs(g.y - pos.y) > 3.5) return;
     var ang = Math.atan2(dx, dz) - rot; ang = Math.abs(Math.atan2(Math.sin(ang), Math.cos(ang)));
-    if (ang > 1.9 && d > 1.2) return;
+    if (ang > 1.4 && d > 1.2) return;
     if (d < bd) { bd = d; best = i; }
   });
   return best;
 }
+function faceAim() { var f = lookDir(); rot = Math.atan2(f.x, f.z); faceUntil = performance.now() + 900; if (me) me.inner.rotation.y = rot; }   /* turn your body to where you aim */
 function doAction() {
   if (!playing || menuOpen || typing || spec.on) return;
   var held = curHeld(); if (!held) return;
   var now = performance.now();
   if (held === 'knife') {
-    if (now - tool.atkAt < STAB_CD) return; tool.atkAt = now; swing();
-    var t = nearestTarget(STAB_REACH); if (t !== null) sendEv({ t: 'kill', target: t, w: 'knife' });
+    if (now - tool.atkAt < STAB_CD || now < tool.throwUntil) return; tool.atkAt = now; faceAim(); swing('knife');
+    var t = nearestTarget(STAB_REACH); if (t !== null) setTimeout(function() { sendEv({ t: 'kill', target: t, w: 'knife' }); }, 110);   /* lands when the blade comes down */
   } else {
-    if (now < tool.gunUntil) return; tool.gunUntil = now + GUN_CD; swing(); shoot();
+    if (now < tool.gunUntil) return; tool.gunUntil = now + GUN_CD; faceAim(); swing('gun'); shoot();
   }
 }
 function wallDist(o, d, far) { var t = far; for (var i = 0; i < colliders.length; i++) { var h = rayBox(colliders[i], o[0], o[1], o[2], d.x, d.y, d.z); if (h < t) t = h; } return t; }
@@ -934,53 +1021,122 @@ function segDist(p1, q1, p2, q2) {                                    /* closest
   var c1 = [p1[0] + d1[0] * s, p1[1] + d1[1] * s, p1[2] + d1[2] * s], c2 = [p2[0] + d2[0] * t, p2[1] + d2[1] * t, p2[2] + d2[2] * t], dd = sub(c1, c2);
   return { d2: dot(dd, dd), s: s };
 }
+var TRG = null;
 function tracer(a, b) {
   var len = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); if (len < 0.1) return;
-  var m = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1), new THREE.MeshBasicMaterial({ color: lin(0xffe14d) }));
-  m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); m.lookAt(b[0], b[1], b[2]); m.scale.z = len; scene.add(m); tracers.push({ m: m, until: performance.now() + 140 });
+  TRG = TRG || new THREE.BoxGeometry(0.16, 0.16, 1);
+  var m = new THREE.Mesh(TRG, new THREE.MeshBasicMaterial({ color: lin(0xfff0a0), transparent: true, opacity: 1, depthWrite: false }));
+  m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); m.lookAt(b[0], b[1], b[2]); m.scale.z = len; scene.add(m);
+  tracers.push({ m: m, born: performance.now(), life: 200, kind: 'tr' });
 }
-function shoot() {                                                   /* the bullet goes where the crosshair (screen centre) points */
-  var o = [cam.position.x, cam.position.y, cam.position.z], d = lookDir(), tw = wallDist(o, d, 140), best = null, bt = tw;
-  var far = [o[0] + d.x * tw, o[1] + d.y * tw, o[2] + d.z * tw];
+function puff(p, col) {                                              /* little burst where a bullet lands */
+  var m = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), new THREE.MeshBasicMaterial({ color: lin(col), transparent: true, opacity: 1, depthWrite: false }));
+  m.position.set(p[0], p[1], p[2]); scene.add(m); tracers.push({ m: m, born: performance.now(), life: 260, kind: 'puff' });
+}
+function stepFx(now) {
+  for (var i = tracers.length - 1; i >= 0; i--) {
+    var t = tracers[i], k = 1 - (now - t.born) / t.life;
+    if (k <= 0) { scene.remove(t.m); t.m.material.dispose(); if (t.kind === 'puff') t.m.geometry.dispose(); tracers.splice(i, 1); continue; }
+    t.m.material.opacity = k;
+    if (t.kind === 'tr') { t.m.scale.x = t.m.scale.y = 0.35 + 0.65 * k; } else t.m.scale.setScalar(1 + (1 - k) * 1.8);
+  }
+}
+function xhairPulse(hit) {
+  var x = el('xhair'); x.classList.remove('fire', 'hit'); void x.offsetWidth; x.classList.add('fire'); if (hit) x.classList.add('hit');
+  clearTimeout(xhT); xhT = setTimeout(function() { x.classList.remove('fire', 'hit'); }, 170);
+}
+/* The aim ray: it goes from the camera through the crosshair (screen centre), in first AND third person. It starts level with your head so nothing behind you can be hit. */
+function aimRay(far) {
+  var f = lookDir(), c = cam.position, hx = pos.x, hy = pos.y + 4.2, hz = pos.z;
+  var t0 = fp ? 0 : Math.max(0, (hx - c.x) * f.x + (hy - c.y) * f.y + (hz - c.z) * f.z);
+  var o = [c.x + f.x * t0, c.y + f.y * t0, c.z + f.z * t0];
+  return { f: f, o: o, tw: wallDist(o, f, far) };
+}
+function muzzlePos() {                                               /* where the bullet leaves the gun */
+  var v;
+  if (fp) { v = new THREE.Vector3(0.62, -0.6, -2.9); cam.updateMatrixWorld(); return cam.localToWorld(v).toArray(); }
+  v = new THREE.Vector3(0, -2.4, 0.16); me.gunM.updateWorldMatrix(true, false); return me.gunM.localToWorld(v).toArray();
+}
+function shoot() {                                                   /* the bullet goes where the crosshair points */
+  var a = aimRay(140), f = a.f, o = a.o, tw = a.tw, best = null, bt = tw;
+  var far = [o[0] + f.x * tw, o[1] + f.y * tw, o[2] + f.z * tw];
   targets().forEach(function(i) {
     var g = remotes[i].g.position, r = segDist(o, far, [g.x, g.y + 0.3, g.z], [g.x, g.y + 5, g.z]);
     if (r.d2 <= 1.5 * 1.5 && r.s * tw < bt) { bt = r.s * tw; best = i; }
   });
-  var end = [o[0] + d.x * bt, o[1] + d.y * bt, o[2] + d.z * bt], from = [pos.x, pos.y + 3.4, pos.z];
-  tracer(from, end); sendFx({ t: 'shot', x: from[0], y: from[1], z: from[2], tx: end[0], ty: end[1], tz: end[2] });
+  var end = [o[0] + f.x * bt, o[1] + f.y * bt, o[2] + f.z * bt], from = muzzlePos(), landed = best !== null || tw < 139;
+  var mx = end[0] - from[0], my = end[1] - from[1], mz = end[2] - from[2], L = Math.hypot(mx, my, mz) || 1, md = { x: mx / L, y: my / L, z: mz / L };
+  var wl = wallDist(from, md, L);
+  if (wl < L - 0.3) { end = [from[0] + md.x * wl, from[1] + md.y * wl, from[2] + md.z * wl]; best = null; landed = true; }   /* something between the gun and the target (a corner) */
+  tracer(from, end); if (landed) puff(end, best !== null ? 0xff4040 : 0xffb84d);
+  xhairPulse(best !== null);
+  sendFx({ t: 'shot', x: from[0], y: from[1], z: from[2], tx: end[0], ty: end[1], tz: end[2], l: landed ? 1 : 0, h: best !== null ? 1 : 0 });
   if (best !== null) sendEv({ t: 'kill', target: best, w: 'gun' });
 }
-function makeKnifeMesh() {                                           /* built along the arm: the blade points the way the arm points */
-  var g = new THREE.Group(), metal = new THREE.MeshStandardMaterial({ color: lin(0xd6dbe0), roughness: 0.3, metalness: 0.7 }), dark = new THREE.MeshStandardMaterial({ color: lin(0x2b2b2b), roughness: 0.8, metalness: 0 });
+/* ---- weapon models: built around the hand. The blade / barrel points along the arm (local -y). ---- */
+function makeKnifeMesh() {
+  var g = new THREE.Group(), metal = new THREE.MeshStandardMaterial({ color: lin(0xe3e8ee), roughness: 0.22, metalness: 0.8 }), dark = new THREE.MeshStandardMaterial({ color: lin(0x2b2420), roughness: 0.8, metalness: 0 }), gold = new THREE.MeshStandardMaterial({ color: lin(0xff6a00), roughness: 0.5, metalness: 0.2 });
   function part(w, h, d, m, x, y, z) { var o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); }
-  part(0.2, 0.7, 0.2, dark, 0, -2.0, 0); part(0.6, 0.12, 0.3, dark, 0, -2.4, 0); part(0.1, 1.5, 0.34, metal, 0, -3.2, 0);
+  part(0.24, 0.8, 0.28, dark, 0, 0, 0);               /* handle */
+  part(0.3, 0.14, 0.34, gold, 0, 0.46, 0);            /* pommel */
+  part(0.72, 0.13, 0.36, gold, 0, -0.46, 0);          /* guard */
+  part(0.08, 1.5, 0.42, metal, 0, -1.3, 0);           /* blade */
+  part(0.08, 0.42, 0.22, metal, 0, -2.26, 0);         /* tip */
   return g;
 }
 function makeGunMesh() {
-  var g = new THREE.Group(), dark = new THREE.MeshStandardMaterial({ color: lin(0x2e2e33), roughness: 0.5, metalness: 0.4 }), acc = new THREE.MeshStandardMaterial({ color: lin(0xff6a00), roughness: 0.6, metalness: 0 });
+  var g = new THREE.Group(), dark = new THREE.MeshStandardMaterial({ color: lin(0x2a2b30), roughness: 0.45, metalness: 0.5 }), steel = new THREE.MeshStandardMaterial({ color: lin(0x9097a0), roughness: 0.3, metalness: 0.85 }), acc = new THREE.MeshStandardMaterial({ color: lin(0xff6a00), roughness: 0.6, metalness: 0 });
   function part(w, h, d, m, x, y, z) { var o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); }
-  part(0.3, 0.9, 0.34, dark, 0, -2.3, 0); part(0.2, 0.9, 0.2, dark, 0, -3.1, 0.04); part(0.24, 0.3, 0.5, acc, 0, -2.0, -0.3);
+  part(0.34, 1.5, 0.46, dark, 0, -0.95, 0.12);        /* slide */
+  part(0.2, 0.55, 0.2, steel, 0, -2.0, 0.16);         /* barrel */
+  part(0.36, 0.46, 0.74, dark, 0, -0.28, -0.44);      /* grip (hangs down) */
+  part(0.37, 0.9, 0.08, acc, 0, -0.95, 0.37);         /* orange stripe on top */
+  part(0.1, 0.16, 0.14, steel, 0, -1.75, 0.4);        /* front sight */
+  var fl = new THREE.Group(), fm = new THREE.MeshBasicMaterial({ color: lin(0xffd24a), transparent: true, opacity: 0.95, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+  var p1 = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), fm), p2 = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), fm), core = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), fm);
+  p2.rotation.y = Math.PI / 2; fl.add(p1); fl.add(p2); fl.add(core); fl.position.set(0, -2.45, 0.16); fl.visible = false; g.add(fl); g.userData.flash = fl;   /* muzzle flash */
   return g;
 }
+/* first-person weapon (rides on the camera): you can see what you hold */
+var vm = new THREE.Group(), vmG = makeGunMesh(), vmK = makeKnifeMesh();
+(function() {
+  vmG.quaternion.setFromRotationMatrix(new THREE.Matrix4().set(-1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1));   /* barrel forward, top up */
+  vmK.rotation.order = 'YXZ';
+  [vmG, vmK].forEach(function(o) { o.traverse(function(m) { if (m.isMesh) { m.castShadow = false; m.renderOrder = 1000; m.frustumCulled = false; m.material.depthTest = false; } }); vm.add(o); });
+  vm.scale.setScalar(0.6); vm.visible = false; cam.add(vm);
+})();
+function updateVM(now, held) {
+  var show = fp && !!held && !spec.on; vm.visible = show; if (!show) return;
+  var isK = held === 'knife'; vmG.visible = !isK; vmK.visible = isK;
+  var u = me.atk > 0 ? 1 - me.atk / (me.atkD || 0.4) : -1, bob = Math.sin(now / 240) * (meMoving ? 0.035 : 0.01), x = 0.62, y = -0.62 + bob, z = -1.5, rx = 0;
+  if (isK) { var kp = poseKnife(u); vmK.rotation.x = Math.PI - 0.35 - (kp.tilt - 0.15); vmK.rotation.y = 0.35; y += 0.25 * kp.up; z -= 0.2 * Math.max(0, kp.tilt - 0.15); }
+  else { var gp = poseGun(u); z += 0.28 * gp.kick; rx = 0.2 * gp.kick; vmG.userData.flash.visible = u >= 0 && u < 0.2; }
+  vm.position.set(x, y, z); vm.rotation.x = rx;
+}
 function spawnKnife(o, d, mine) {
-  var k = makeKnifeMesh(); k.position.y = 3.0;
-  var kk = new THREE.Group(); kk.add(k); kk.position.set(o.x, o.y, o.z);
+  var k = makeKnifeMesh(); k.position.y = 1.3;                       /* blade centre on the spin axis */
+  var spin = new THREE.Group(); spin.add(k);
+  var kk = new THREE.Group(); kk.add(spin); kk.position.set(o.x, o.y, o.z);
   kk.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(d.x, d.y, d.z)); scene.add(kk);
-  projectiles.push({ m: kk, k: k, p: [o.x, o.y, o.z], d: [d.x, d.y, d.z], life: 0, mine: mine });
+  projectiles.push({ m: kk, k: spin, p: [o.x, o.y, o.z], d: [d.x, d.y, d.z], life: 0, mine: mine });
 }
 function doThrow() {
   if (!playing || menuOpen || typing || spec.on || !(tool.type === 'knife' && tool.equipped) || performance.now() < tool.throwUntil) return;
-  tool.throwUntil = performance.now() + THROW_CD; swing();           /* the knife leaves your hand and you cannot use it for 3 seconds */
-  var cd = lookDir(), co = [cam.position.x, cam.position.y, cam.position.z], tw = Math.min(70, wallDist(co, cd, 70));
-  var o = { x: pos.x, y: pos.y + 3.4, z: pos.z }, aim = [co[0] + cd.x * tw, co[1] + cd.y * tw, co[2] + cd.z * tw];
-  var dx = aim[0] - o.x, dy = aim[1] - o.y, dz = aim[2] - o.z, L = Math.hypot(dx, dy, dz) || 1, d = { x: dx / L, y: dy / L, z: dz / L };
-  o.x += d.x * 1.5; o.y += d.y * 1.5; o.z += d.z * 1.5;
-  spawnKnife(o, d, true); sendFx({ t: 'throw', x: o.x, y: o.y, z: o.z, dx: d.x, dy: d.y, dz: d.z });
+  var now = performance.now(); tool.throwUntil = now + THROW_CD; tool.rel = now + 120; faceAim(); swing('knife');   /* cooldown: you cannot use the knife for THROW_CD after it leaves your hand */
+  var a = aimRay(70), f = a.f, tw = a.tw, endp = [a.o[0] + f.x * tw, a.o[1] + f.y * tw, a.o[2] + f.z * tw];
+  setTimeout(function() {                                            /* released at the top of the swing, towards the crosshair */
+    if (!me) return;
+    me.aR.updateWorldMatrix(true, false); var s = me.aR.localToWorld(new THREE.Vector3(0, -2, 0)), d = { x: f.x, y: f.y, z: f.z };
+    if (tw > 6) { var dx = endp[0] - s.x, dy = endp[1] - s.y, dz = endp[2] - s.z, L = Math.hypot(dx, dy, dz) || 1; d = { x: dx / L, y: dy / L, z: dz / L }; }
+    var o = { x: s.x + d.x * 1.2, y: s.y + d.y * 1.2, z: s.z + d.z * 1.2 };
+    spawnKnife(o, d, true); sendFx({ t: 'throw', x: o.x, y: o.y, z: o.z, dx: d.x, dy: d.y, dz: d.z });
+  }, 120);
+  xhairPulse(false);
 }
 function onFx(sn) {
   var e = sn.val(); if (!e || e.by === slot || srvNow() - (e.at || 0) > 3000) return;
   if (e.t === 'throw') spawnKnife({ x: e.x, y: e.y, z: e.z }, { x: e.dx, y: e.dy, z: e.dz }, false);
-  else if (e.t === 'shot') tracer([e.x, e.y, e.z], [e.tx, e.ty, e.tz]);
+  else if (e.t === 'shot') { tracer([e.x, e.y, e.z], [e.tx, e.ty, e.tz]); if (e.l) puff([e.tx, e.ty, e.tz], e.h ? 0xff4040 : 0xffb84d); }
 }
 function stepProjectiles(dt) {
   for (var k = projectiles.length - 1; k >= 0; k--) {
@@ -991,7 +1147,7 @@ function stepProjectiles(dt) {
       targets().forEach(function(t) { var g = remotes[t].g.position; if (segDist(a, b, [g.x, g.y + 0.3, g.z], [g.x, g.y + 5, g.z]).d2 <= 1.4 * 1.4) hit = t; });
       if (hit !== null) { sendEv({ t: 'kill', target: hit, w: 'throw' }); dead = true; }
     }
-    q.p = b; q.m.position.set(b[0], b[1], b[2]); q.k.rotation.y += dt * 25; q.life += step;
+    q.p = b; q.m.position.set(b[0], b[1], b[2]); q.k.rotation.x += dt * 22; q.life += step;
     if (q.life > 90) dead = true;
     if (dead) { scene.remove(q.m); projectiles.splice(k, 1); }
   }
@@ -1001,17 +1157,26 @@ function stepProjectiles(dt) {
 function updateOrb() {
   if (mm.phase === 'round' && mm.gun) {
     if (!orb) {
-      orb = new THREE.Group(); var gm = new THREE.Group(), gg = makeGunMesh(); gg.rotation.x = Math.PI / 2; gg.position.y = 2.6; gm.add(gg); orb.add(gm);
+      orb = new THREE.Group(); var gm = new THREE.Group(), gg = makeGunMesh(); gg.rotation.x = Math.PI / 2; gg.position.set(0, 0, 1.2); gm.add(gg); orb.add(gm);
       orb.add(new THREE.Mesh(new THREE.SphereGeometry(1.7, 20, 14), new THREE.MeshBasicMaterial({ color: lin(0x3ddc84), transparent: true, opacity: 0.32, depthWrite: false })));
       orb.userData.gm = gm; scene.add(orb);
     }
     orb.userData.base = mm.gun.y + 1.5; orb.position.set(mm.gun.x, orb.userData.base, mm.gun.z);
   } else if (orb) { scene.remove(orb); orb = null; }
 }
+function cdUI(now) {                                                 /* cooldown ring on the weapon slot */
+  if (!tool.type) return;
+  var knife = tool.type === 'knife', rem = (knife ? tool.throwUntil : tool.gunUntil) - now, tot = knife ? THROW_CD : GUN_CD, c = el('tcd');
+  var key = rem > 0 ? Math.round(Math.min(1, rem / tot) * 180) + '_' + Math.ceil(rem / 1000) : '';
+  if (key === lastCd) return; lastCd = key;
+  if (rem > 0) { c.style.display = 'flex'; c.style.background = 'conic-gradient(rgba(8,8,10,.78) ' + (Math.min(1, rem / tot) * 360).toFixed(0) + 'deg, rgba(0,0,0,0) 0)'; c.textContent = Math.ceil(rem / 1000); }
+  else c.style.display = 'none';
+}
 function mmFrame(dt) {
-  applyHand(); stepProjectiles(dt);
+  refreshTool(); stepProjectiles(dt);
   var now = performance.now();
-  for (var i = tracers.length - 1; i >= 0; i--) if (now > tracers[i].until) { scene.remove(tracers[i].m); tracers.splice(i, 1); }
+  me.aimP = Math.max(-1.2, Math.min(1.2, -pitch));                   /* your arm points where you aim */
+  stepFx(now); updateVM(now, curHeld()); cdUI(now);
   if (orb) {
     orb.position.y = orb.userData.base + Math.sin(now / 500) * 0.3; orb.userData.gm.rotation.y = now / 700;
     if (amAlive() && myRole() !== 'murderer' && mm.holder !== slot && mm.gun && Math.hypot(pos.x - mm.gun.x, pos.z - mm.gun.z) < 3 && Math.abs(pos.y + 2 - mm.gun.y) < 4 && now - pickupAt > 1000) { pickupAt = now; sendEv({ t: 'pickup' }); }
@@ -1029,18 +1194,23 @@ function mmText() {
   if (!dbOK || !mm.endsAt || liveSlots().length < MIN_PLAYERS) return 'Waiting for players (need ' + MIN_PLAYERS + ')';
   return 'Next round: ' + Math.max(0, Math.ceil((mm.endsAt - srvNow()) / 1000)) + ' sec';
 }
+var ROLEUI = { murderer: ['Murderer', '#ff4444'], sheriff: ['Sheriff', '#4aa8ff'], innocent: ['Innocent', '#3ddc84'] }, badgeKey = '';
 function mmUI() {
   var top = el('mmtop'); top.style.display = playing ? 'block' : 'none'; if (!playing) return;
-  top.textContent = mmText();
-  var t = tool.type, now = performance.now(), held = curHeld();
+  el('mmtxt').textContent = mmText();
+  var fr = 0;
+  if (dbOK && mm.endsAt && (mm.phase === 'round' || liveSlots().length >= MIN_PLAYERS)) fr = Math.max(0, Math.min(1, (mm.endsAt - srvNow()) / ((mm.phase === 'round' ? ROUND_SEC : INTERMISSION_SEC) * 1000)));
+  el('mmfill').style.width = (fr * 100).toFixed(1) + '%';
+  var t = tool.type, held = curHeld(), r = myRole(), badge = el('rolebadge');
+  var showB = !!r && amAlive() && el('roleBox').style.display !== 'block', key = showB ? r : '';
+  if (key !== badgeKey) { badgeKey = key; badge.style.display = showB ? 'block' : 'none'; if (showB) badge.innerHTML = 'You are <b style="color:' + ROLEUI[r][1] + '">' + ROLEUI[r][0] + '</b>'; }
   el('toolbar').style.display = t ? 'flex' : 'none';
   if (t) {
-    el('tslot').className = tool.equipped ? 'on' : '';
-    var cd = (t === 'knife' ? tool.throwUntil : tool.gunUntil) - now, c = el('tcd');
-    if (cd > 0) { c.style.display = 'flex'; c.textContent = Math.ceil(cd / 1000); } else c.style.display = 'none';
-    var h = el('thint'); h.style.display = held === 'knife' ? 'block' : 'none'; h.textContent = touchOn ? 'Tap THROW to throw' : 'T to throw';   /* shown while you hold the knife */
+    el('tslot').classList.toggle('on', !!tool.equipped);
+    var h = el('thint'); h.style.display = held ? 'block' : 'none';
+    h.textContent = held === 'knife' ? (touchOn ? 'Tap STAB / THROW' : 'Click to stab \u00b7 T to throw') : (touchOn ? 'Tap SHOOT' : 'Click to shoot');
   }
-  el('xhair').style.display = held === 'gun' ? 'block' : 'none';
+  el('xhair').style.display = held && !spec.on ? 'block' : 'none';
   document.body.classList.toggle('armed', !!held); document.body.classList.toggle('knife', held === 'knife');
   el('abtn').textContent = held === 'gun' ? 'SHOOT' : 'STAB';
   el('specbtn').style.display = (mm.phase === 'round' && !amAlive() && !spec.on && targets().length > 0) ? 'block' : 'none';
