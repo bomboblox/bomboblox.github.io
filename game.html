@@ -53,6 +53,29 @@ body.touch #clog{height:100px}
 #menubtn span{display:block;width:22px;height:3px;background:#ff6a00}
 #diag{color:#777;font-size:12px;line-height:1.5;border-top:1px solid #333;padding-top:8px}
 #diag div:empty{display:none}
+#mmtop{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(17,17,17,.88);border:2px solid #ff6a00;padding:8px 22px;font-size:18px;font-weight:700;z-index:3;display:none;white-space:nowrap;pointer-events:none}
+#roleBox{position:fixed;left:0;right:0;top:28%;text-align:center;font-size:64px;font-weight:900;color:#fff;text-shadow:0 3px 0 #000,0 0 18px rgba(0,0,0,.8);z-index:8;display:none;pointer-events:none}
+#resultBox{position:fixed;left:50%;top:32%;transform:translateX(-50%);background:rgba(17,17,17,.94);border:3px solid #ff6a00;padding:24px 44px;font-size:44px;font-weight:900;color:#fff;z-index:9;display:none;text-align:center;pointer-events:none}
+#blackout{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .15s;z-index:7}
+#blackout.on{opacity:1}
+#xhair{position:fixed;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border:2px solid #fff;border-radius:50%;opacity:.85;display:none;pointer-events:none;z-index:3}
+#toolbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:6px;z-index:3}
+#tslot{position:relative;width:68px;height:68px;background:rgba(17,17,17,.88);border:2px solid #555;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#tslot.on{border-color:#ff6a00;background:rgba(58,35,8,.92)}
+#ticon{width:100%;height:100%;object-fit:contain;padding:6px;box-sizing:border-box}
+#tlabel{font-weight:900;font-size:13px;color:#fff}
+#tkey{position:absolute;top:2px;left:5px;font-size:12px;font-weight:700;color:#ccc}
+#tcd{position:absolute;inset:0;background:rgba(0,0,0,.66);color:#fff;font-weight:900;font-size:24px;display:none;align-items:center;justify-content:center}
+#thint{font-size:14px;font-weight:700;color:#fff;background:rgba(17,17,17,.85);padding:3px 10px;display:none}
+#specbtn{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);padding:10px 24px;background:#ff6a00;color:#111;font-weight:700;cursor:pointer;display:none;z-index:3}
+#specbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:none;align-items:center;gap:8px;background:rgba(17,17,17,.88);border:2px solid #ff6a00;padding:6px 10px;z-index:3;font-weight:700}
+#specbar button{height:32px;min-width:36px;padding:0 10px;background:#333;color:#fff;border:0;font-weight:700;cursor:pointer}#specbar button:hover{background:#ff6a00;color:#111}
+#spname{min-width:90px;text-align:center}
+#abtn,#tbtn{position:fixed;display:none;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.55);color:#fff;font-weight:900;font-size:13px;touch-action:none;z-index:4}
+#abtn{width:76px;height:76px;right:calc(140px + env(safe-area-inset-right));bottom:calc(52px + env(safe-area-inset-bottom))}
+#tbtn{width:64px;height:64px;right:calc(148px + env(safe-area-inset-right));bottom:calc(140px + env(safe-area-inset-bottom))}
+body.touch.armed #abtn{display:flex}
+body.touch.knife #tbtn{display:flex}
 </style>
 </head>
 <body>
@@ -70,13 +93,22 @@ body.touch #clog{height:100px}
   <button id="mleave" class="red" type="button">Leave game</button>
 </div></div>
 
-<div id="touchui"><div id="joy"><div id="knob"></div></div><div id="jbtn">JUMP</div></div>
+<div id="mmtop"></div>
+<div id="roleBox"></div>
+<div id="resultBox"></div>
+<div id="blackout"></div>
+<div id="xhair"></div>
+<div id="toolbar"><div id="thint">T to throw</div><div id="tslot"><img id="ticon" alt=""><span id="tlabel"></span><span id="tkey">1</span><div id="tcd"></div></div></div>
+<div id="specbtn">Spectate</div>
+<div id="specbar"><button id="sprev" type="button">&lt;</button><span id="spname"></span><button id="snext" type="button">&gt;</button><button id="sstop" type="button">Stop</button></div>
+
+<div id="touchui"><div id="joy"><div id="knob"></div></div><div id="jbtn">JUMP</div><div id="abtn">STAB</div><div id="tbtn">THROW</div></div>
 
 <div id="join"><div class="box">
   <h2>Enter ur name</h2>
   <input id="nm" maxlength="16" placeholder="Ur noob name" autocomplete="off">
   <button id="go" type="button">Join</button>
-  <p>Up to 5 players at once.</p>
+  <p>Up to 10 players at once.</p>
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -94,7 +126,7 @@ body.touch #clog{height:100px}
 var DB_URL = 'https://bomboblox-default-rtdb.europe-west1.firebasedatabase.app';
 var CFG = { apiKey: "AIzaSyA1yGuSQ1sK5_oESRyTmfV_q5i6ZiLhdt0", authDomain: "bomboblox.firebaseapp.com", projectId: "bomboblox", databaseURL: DB_URL, appId: "1:213718036243:web:ab59b8145667ed764a74e6" };
 
-var MAX = 5, COLORS = [0xe53935, 0x1e88e5, 0x43a047, 0xfdd835, 0x8e24aa];
+var MAX = 10, COLORS = [0xe53935, 0x1e88e5, 0x43a047, 0xfdd835, 0x8e24aa, 0xfb8c00, 0x00acc1, 0xd81b60, 0x6d4c41, 0x90a4ae];
 var WALK = 16, JUMP = 53.15, GRAV = 196.2, LIMIT = 250;   /* roblox-like: 16 studs/s, jump height 7.2 studs */
 
 /* ---------- scene ---------- */
@@ -185,6 +217,9 @@ function makeAvatar(name, color) {
   if (HAT) { var hat = HAT.clone(true); hat.position.y = HAT_Y; hat.scale.setScalar(HAT_SCALE); inner.add(hat); }
   function limb(c, x, y) { var p = new THREE.Group(); p.position.set(x, y, 0); p.add(bbox(1, 2, 1, c, 0, -1, 0)); inner.add(p); return p; }
   var p = { g: g, inner: inner, torso: torso, aL: limb(0xf5cd30, -1.5, 4), aR: limb(0xf5cd30, 1.5, 4), lL: limb(0xa3c76d, -0.5, 2), lR: limb(0xa3c76d, 0.5, 2), amp: 0, ph: 0, name: name };
+  p.knifeM = makeKnifeMesh(); p.knifeM.visible = false; p.aR.add(p.knifeM);
+  p.gunM = makeGunMesh(); p.gunM.visible = false; p.aR.add(p.gunM);
+  p.tool = null; p.atk = 0;
   g.add(nameTag(name));
   p.shadow = new THREE.Mesh(new THREE.CircleGeometry(1.3, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
   p.shadow.rotation.x = -Math.PI / 2; p.shadow.position.y = 0.04;
@@ -197,6 +232,11 @@ function animate(p, dt, moving, y, air) {
   var s = Math.sin(p.ph) * p.amp, a = p.airF, b = 1 - a;
   p.aL.rotation.x = s * b - 2.5 * a; p.aR.rotation.x = -s * b - 2.5 * a;               /* jump: both arms swing up */
   p.lL.rotation.x = -s * b - 0.35 * a; p.lR.rotation.x = s * b + 0.3 * a;               /* jump: legs hang a little apart */
+  if (p.tool) {                                                                         /* holding a tool: right arm points forward, and swings when attacking */
+    var st = p.atk > 0 ? Math.sin((1 - p.atk / 0.3) * Math.PI) : 0;
+    p.aR.rotation.x = -1.45 - (p.tool === 'knife' ? 0.9 : 0.35) * st;
+  }
+  if (p.atk > 0) p.atk = Math.max(0, p.atk - dt);
   p.shadow.position.x = p.g.position.x; p.shadow.position.z = p.g.position.z;
   var k = 1 / (1 + y * 0.12); p.shadow.scale.set(k, k, 1); p.shadow.material.opacity = 0.35 * k;
 }
@@ -213,14 +253,21 @@ addEventListener('keydown', function(e) {
   if (typing) return;
   if (!menuOpen && (e.code === 'Enter' || e.key === '/')) { e.preventDefault(); document.getElementById('cin').focus(); return; }
   if (menuOpen) return;
+  if (e.code === 'KeyT') { doThrow(); return; }
+  if (e.code === 'Digit1') { toggleEquip(); return; }
   keys[e.code] = true; if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault();
 });
 addEventListener('keyup', function(e) { keys[e.code] = false; });
 addEventListener('blur', function() { keys = {}; });
 var ptrs = {}, lastPinch = 0, cv = ren.domElement;
-cv.addEventListener('pointerdown', function(e) { ptrs[e.pointerId] = { x: e.clientX, y: e.clientY }; lastPinch = 0; try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
+cv.addEventListener('pointerdown', function(e) { ptrs[e.pointerId] = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now(), n: Object.keys(ptrs).length }; lastPinch = 0; try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
 function pEnd(e) { delete ptrs[e.pointerId]; lastPinch = 0; }
-cv.addEventListener('pointerup', pEnd); cv.addEventListener('pointercancel', pEnd);
+cv.addEventListener('pointerup', function(e) {                /* a quick left click (not a camera drag) = use the tool */
+  var q = ptrs[e.pointerId];
+  if (q && e.pointerType === 'mouse' && e.button === 0 && q.n === 0 && performance.now() - q.t0 < 300 && Math.hypot(e.clientX - q.x0, e.clientY - q.y0) < 6) doAction();
+  pEnd(e);
+});
+cv.addEventListener('pointercancel', pEnd);
 cv.addEventListener('pointermove', function(e) {
   var p = ptrs[e.pointerId]; if (!p) return;
   var ids = Object.keys(ptrs);
@@ -238,7 +285,7 @@ addEventListener('resize', function() { cam.aspect = innerWidth / innerHeight; c
 function stepMe(dt) {
   var f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
   var r = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
-  f += joy.f; r += joy.r;
+  f += joy.f; r += joy.r; if (spec.on) { f = 0; r = 0; }
   var mag = Math.min(1, Math.hypot(f, r)), moving = mag > 0.12;
   if (moving) {
     var fx = -Math.sin(yaw), fz = -Math.cos(yaw);          /* camera forward on the ground */
@@ -249,11 +296,11 @@ function stepMe(dt) {
     rot += d * Math.min(1, dt * 14);
   }
   pushOut();
-  if (keys.Space && onGround) { vy = JUMP; onGround = false; }
+  if (keys.Space && onGround && !spec.on) { vy = JUMP; onGround = false; }
   var py = pos.y, v0 = vy; vy -= GRAV * dt; pos.y += (v0 + vy) / 2 * dt;      /* exact for constant gravity */
   vertical(py);
   if (!hasMap) { pos.x = Math.max(-LIMIT, Math.min(LIMIT, pos.x)); pos.z = Math.max(-LIMIT, Math.min(LIMIT, pos.z)); }
-  if (pos.y < -200) respawn();
+  if (pos.y < -200) resetCharacter();
   me.g.position.set(pos.x, pos.y, pos.z); me.inner.rotation.y = rot;
   meMoving = moving && onGround; meAir = !onGround; animate(me, dt, meMoving, pos.y, meAir);
 }
@@ -269,9 +316,10 @@ function rayBox(c, ox, oy, oz, dx, dy, dz) {      /* distance along the ray to w
   return tmin >= 0 ? tmin : Infinity;
 }
 function stepCam(dt) {
-  var tx = pos.x, ty = pos.y + 4, tz = pos.z;
+  var tx = pos.x, ty = pos.y + 4, tz = pos.z, stg = spec.on ? specTarget() : null;
+  if (stg !== null && remotes[stg]) { var sg = remotes[stg].g.position; tx = sg.x; ty = sg.y + 4; tz = sg.z; } else if (spec.on) spec.on = false;
   var dx = Math.sin(yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(yaw) * Math.cos(pitch), allowed = dist;
-  fp = dist <= 1; if (me) me.g.visible = !fp;                       /* first person: camera in the head, your avatar is hidden */
+  fp = dist <= 1 && !spec.on; if (me) me.g.visible = !fp;                       /* first person: camera in the head, your avatar is hidden */
   if (fp) {
     var ey = pos.y + 4.7; cam.position.set(tx, ey, tz); cam.lookAt(tx - dx, ey - dy, tz - dz);
     sun.position.set(tx + 60, ty + 100, tz + 40); sun.target.position.set(tx, ty - 4, tz); sky.position.copy(cam.position); return;
@@ -285,7 +333,7 @@ function stepCam(dt) {
 }
 
 /* ---------- multiplayer (Firebase Realtime Database) ---------- */
-var slot = -1, sref = null, remotes = {}, dbOK = false, sent = { x: 1e9, y: 0, z: 0, r: 0, t: 0, w: 0, j: 0 }, meMoving = false, meAir = false;
+var slot = -1, sref = null, remotes = {}, dbOK = false, sent = { x: 1e9, y: 0, z: 0, r: 0, t: 0, w: 0, j: 0, tl: '', ac: 0 }, meMoving = false, meAir = false;
 var srvOff = 0, lastSlots = {}, STALE = 20000;       /* a slot with no heartbeat for 20s belongs to someone who is gone */
 function setStatus(t) { document.getElementById('status').textContent = t; }
 function drawList() {
@@ -308,10 +356,10 @@ function connect(name) {
   } catch (e) { clearTimeout(failTimer); setStatus('Solo mode (' + e.message + ')'); }
 }
 function claimSlot(i) {
-  if (i >= MAX) { clearTimeout(failTimer); slot = -1; sref = null; dbOK = false; setStatus('Server is full (5/5). Solo mode. Refresh to try again.'); return; }
+  if (i >= MAX) { clearTimeout(failTimer); slot = -1; sref = null; dbOK = false; setStatus('Server is full (' + MAX + '/' + MAX + '). Solo mode. Refresh to try again.'); return; }
   DB.ref('game/slots/' + i).transaction(function(cur) {
     /* take a free slot, or one left behind by a player who is gone */
-    return slotFree(cur) ? { n: myName, sid: SID, x: pos.x, y: pos.y, z: pos.z, r: rot, w: 0, j: 0, ts: firebase.database.ServerValue.TIMESTAMP } : undefined;
+    return slotFree(cur) ? { n: myName, sid: SID, x: pos.x, y: pos.y, z: pos.z, r: rot, w: 0, j: 0, tl: '', ac: 0, ts: firebase.database.ServerValue.TIMESTAMP } : undefined;
   }, function(err, ok) {
     if (err) { clearTimeout(failTimer); setStatus('Solo mode (database said: ' + (err.code || err.message) + '). Check the Rules tab.'); return; }
     if (!ok) return claimSlot(i + 1);
@@ -324,14 +372,15 @@ function claimSlot(i) {
 function startNetwork() {
   DB.ref('game/slots').on('value', function(snap) {
     lastSlots = snap.val() || {};
+    Object.keys(lastSlots).forEach(function(i) { var d = lastSlots[i]; if (d && typeof d.x === 'number') lastPos[i] = { x: d.x, y: d.y, z: d.z }; });
     var m = lastSlots[slot];
     if (sref && slot >= 0 && (!m || m.sid !== SID)) { sref = null; slot = -1; dbOK = false; claimSlot(0); }   /* our slot was taken or wiped (phone slept): get a new one */
     syncRemotes(lastSlots);
   });
   DB.ref('game/slots').once('value').then(function(snap) {            /* first one in? then start with a fresh chat */
     var v = snap.val() || {}, alone = Object.keys(v).every(function(k) { return +k === slot || !fresh(v[k]); });
-    return alone ? DB.ref('game/chat').remove() : null;
-  }).catch(function() {}).then(function() { startChat(DB); });
+    return alone ? Promise.all([DB.ref('game/chat').remove(), DB.ref('game/mm').remove(), DB.ref('game/mmev').remove(), DB.ref('game/mmfx').remove()]) : null;
+  }).catch(function() {}).then(function() { startChat(DB); startMM(); });
   setInterval(sendMe, 70);
   setInterval(function() { if (mine()) sref.update({ ts: firebase.database.ServerValue.TIMESTAMP }); }, 5000);   /* heartbeat */
   setInterval(function() { syncRemotes(lastSlots); }, 3000);                                                     /* forget players whose heartbeat stopped */
@@ -339,11 +388,11 @@ function startNetwork() {
 function mine() { return !!sref && !!lastSlots[slot] && lastSlots[slot].sid === SID; }
 function sendMe() {
   if (!mine()) return;
-  var now = Date.now(), w = meMoving ? 1 : 0, j = meAir ? 1 : 0;
-  var moved = Math.abs(pos.x - sent.x) + Math.abs(pos.y - sent.y) + Math.abs(pos.z - sent.z) + Math.abs(rot - sent.r) > 0.01 || w !== sent.w || j !== sent.j;
+  var now = Date.now(), w = meMoving ? 1 : 0, j = meAir ? 1 : 0, h = curHeld(), tl = h === 'knife' ? 'k' : h === 'gun' ? 'g' : '';
+  var moved = Math.abs(pos.x - sent.x) + Math.abs(pos.y - sent.y) + Math.abs(pos.z - sent.z) + Math.abs(rot - sent.r) > 0.01 || w !== sent.w || j !== sent.j || tl !== sent.tl || myAc !== sent.ac;
   if (!moved && now - sent.t < 1500) return;
-  sent = { x: pos.x, y: pos.y, z: pos.z, r: rot, t: now, w: w, j: j };
-  sref.update({ x: +pos.x.toFixed(2), y: +pos.y.toFixed(2), z: +pos.z.toFixed(2), r: +rot.toFixed(2), w: w, j: j });
+  sent = { x: pos.x, y: pos.y, z: pos.z, r: rot, t: now, w: w, j: j, tl: tl, ac: myAc };
+  sref.update({ x: +pos.x.toFixed(2), y: +pos.y.toFixed(2), z: +pos.z.toFixed(2), r: +rot.toFixed(2), w: w, j: j, tl: tl, ac: myAc });
 }
 function syncRemotes(v) {
   var live = {};
@@ -354,6 +403,9 @@ function syncRemotes(v) {
     if (p && (p.name !== d.n || p.sid !== d.sid)) { removeAvatar(p); p = null; }
     if (!p) { p = remotes[i] = makeAvatar(d.n.slice(0, 16), COLORS[i]); p.sid = d.sid; p.g.position.set(d.x || 0, d.y || 0, d.z || 0); p.rot = d.r || 0; }
     p.tx = d.x || 0; p.ty = d.y || 0; p.tz = d.z || 0; p.tr = d.r || 0; p.tw = d.w === 1; p.tj = d.j === 1;
+    var want = d.tl === 'k' ? 'knife' : d.tl === 'g' ? 'gun' : null; if (p.tool !== want) setTool(p, want);
+    if (p.ac !== undefined && (d.ac || 0) !== p.ac) p.atk = 0.3;                       /* the other player attacked: swing */
+    p.ac = d.ac || 0;
   });
   drawList();
 }
@@ -538,17 +590,20 @@ function buildMap(data) {
     m.updateMatrixWorld(true); grp.add(m); solids.push({ x: x, y: y, z: z, hx: sx / 2, hy: sy / 2, hz: sz / 2, R: R, mesh: m });
   });
   if (data.spawn) spawn = data.spawn;
+  var marks = data.marks && !Array.isArray(data.marks) ? data.marks : {};
+  if (marks.LobbySpawn) lobbySpawn = marks.LobbySpawn;
+  tpBlocks = ['TeleportBlock1', 'TeleportBlock2', 'TeleportBlock3', 'TeleportBlock4', 'TeleportBlock5', 'TeleportBlock6'].map(function(k) { return marks[k]; }).filter(Boolean);
   if (data.lights && data.lights.length) setupLights(data.lights);
   hasMap = true; scene.remove(base); scene.remove(grid);
 }
 var mapReady = loadTextures().then(function() { return fetch('map.json?v=' + Date.now()); }).then(function(r) { if (!r.ok) throw new Error('no map.json'); return r.json(); }).then(function(d) {
-  buildMap(d); document.getElementById('mapinfo').textContent = 'Map: ' + d.parts.length + ' parts, ' + mapLights.length + ' lights. Images: ' + (LOADED.length ? LOADED.join(', ') : 'none (built-in textures)');
+  buildMap(d); document.getElementById('mapinfo').textContent = 'Map: ' + d.parts.length + ' parts, ' + mapLights.length + ' lights, ' + (lobbySpawn ? 'LobbySpawn ok' : 'NO LobbySpawn') + ', ' + tpBlocks.length + '/6 TeleportBlocks. Images: ' + (LOADED.length ? LOADED.join(', ') : 'none (built-in textures)');
 }).catch(function(e) {
   document.getElementById('mapinfo').textContent = e.message === 'no map.json' ? 'No map.json found, using the blank baseplate' : 'map.json is broken (' + e.message + '), using the baseplate';
 });
 
 /* ---------- collision with the map ---------- */
-function respawn() { pos.x = spawn[0]; pos.y = spawn[1] + 0.1; pos.z = spawn[2]; vy = 0; onGround = false; }
+/* respawn() is defined in the murder mystery section: it always goes to LobbySpawn */
 function near(c, r) {          /* is the player circle (radius r) overlapping this part from above/below? returns the push vector info */
   var dx = pos.x - c.x, dz = pos.z - c.z, lx = c.cs * dx - c.sn * dz, lz = c.sn * dx + c.cs * dz;
   var qx = Math.max(-c.hx, Math.min(c.hx, lx)), qz = Math.max(-c.hz, Math.min(c.hz, lz));
@@ -593,11 +648,11 @@ function leave() {
 }
 document.getElementById('menubtn').onclick = toggleMenu;
 document.getElementById('mres').onclick = toggleMenu;
-document.getElementById('mreset').onclick = function() { respawn(); toggleMenu(); };
+document.getElementById('mreset').onclick = function() { resetCharacter(); toggleMenu(); };
 document.getElementById('mleave').onclick = leave;
 
 /* ---------- chat (bubbles + history panel), shared through game/chat in the Realtime Database ---------- */
-var CHATCOL = ['#ff6b66', '#5bb5ff', '#6fdc6f', '#ffe14d', '#d27cf0'], chatReady = true, chatRef = null, lastChat = 0;
+var CHATCOL = ['#ff6b66', '#5bb5ff', '#6fdc6f', '#ffe14d', '#d27cf0', '#ffb04d', '#4dd9e8', '#ff6fa8', '#c49a85', '#c3d0d8'], chatReady = true, chatRef = null, lastChat = 0;
 function bubbleSprite(text) {
   var c = document.createElement('canvas'), x = c.getContext('2d'), F = 'bold 26px Arial';
   x.font = F; var words = text.replace(/(\S{16})/g, '$1 ').split(' '), lines = [], cur = '';
@@ -669,6 +724,334 @@ function enableTouch() {
 if (window.matchMedia && matchMedia('(pointer: coarse)').matches) enableTouch();
 addEventListener('touchstart', enableTouch, { once: true, passive: true });
 
+/* ================= MURDER MYSTERY =================
+   One player (the lowest slot) acts as the host and runs the rounds; all state lives in the Realtime Database under game/mm,
+   so if the host leaves, the next player takes over. Players ask for kills / pickups through game/mmev (the host decides),
+   and game/mmfx only carries visuals (thrown knife, bullet tracer). */
+var INTERMISSION_SEC = 10, ROUND_SEC = 300, MIN_PLAYERS = 2;       /* timings: change here */
+var STAB_CD = 300, THROW_CD = 3000, GUN_CD = 4000, STAB_REACH = 3.2;
+var mm = {}, lobbySpawn = null, tpBlocks = [], lastPos = {}, ending = false, roleToken = 0, lastDeath = 0, pickupAt = 0, inRoundFlag = false, resTimer = null, boTimer = null;
+var tool = { type: null, equipped: true, atkAt: 0, throwUntil: 0, gunUntil: 0 }, projectiles = [], tracers = [], orb = null, myAc = 0, spec = { on: false, i: 0 };
+function el(i) { return document.getElementById(i); }
+function rk(i) { return 'p' + i; }
+function srvNow() { return Date.now() + srvOff; }
+function copy(o) { var r = {}; Object.keys(o || {}).forEach(function(k) { r[k] = o[k]; }); return r; }
+function myRole() { return mm.phase === 'round' && mm.roles && slot >= 0 ? mm.roles[rk(slot)] || null : null; }
+function amAlive() { return !!myRole() && !!mm.alive && mm.alive[rk(slot)] === true; }
+function targets() { var out = []; Object.keys(remotes).forEach(function(i) { if (mm.alive && mm.alive[rk(i)] === true) out.push(+i); }); return out; }
+function teleport(a, jit) { pos.x = a[0] + (Math.random() * 2 - 1) * jit; pos.y = a[1] + 0.1; pos.z = a[2] + (Math.random() * 2 - 1) * jit; vy = 0; onGround = false; }
+function respawn() { teleport(lobbySpawn || spawn, 2); }             /* join, die, reset: always the lobby */
+function resetCharacter() { if (amAlive() && DB && dbOK) sendEv({ t: 'die' }); respawn(); }
+function sendEv(o) { if (!DB || !dbOK) return; DB.ref('game/mmev').push(Object.assign({ by: slot, rid: mm.rid || 0, at: firebase.database.ServerValue.TIMESTAMP }, o)); }
+function sendFx(o) { if (!DB || !dbOK) return; DB.ref('game/mmfx').push(Object.assign({ by: slot, at: firebase.database.ServerValue.TIMESTAMP }, o)); }
+
+/* ---------- host: rounds ---------- */
+function liveSlots() { return Object.keys(lastSlots).filter(function(i) { var d = lastSlots[i]; return fresh(d) && typeof d.n === 'string'; }).map(Number).sort(function(a, b) { return a - b; }); }
+function isHost() { var l = liveSlots(); return !!DB && slot >= 0 && l.length > 0 && l[0] === slot && mine(); }
+function mmUpdate(o) { return DB.ref('game/mm').update(o); }
+function judge(alive, now) {
+  var roles = mm.roles || {}, m = null, others = 0;
+  Object.keys(roles).forEach(function(k) { if (roles[k] === 'murderer') m = k; else if (alive[k] === true) others++; });
+  if (!m || alive[m] !== true) return 'De Innocents Won!';           /* the murderer left or is gone */
+  if (others === 0) return 'De Murderer Wins!';
+  if (now >= (mm.endsAt || 0)) return 'De Innocents Won!';          /* time ran out */
+  return null;
+}
+function startRound(live, now) {
+  var pool = live.slice(), roles = {}, alive = {};
+  var m = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+  var sh = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+  roles[rk(m)] = 'murderer'; roles[rk(sh)] = 'sheriff'; pool.forEach(function(i) { roles[rk(i)] = 'innocent'; });
+  live.forEach(function(i) { alive[rk(i)] = true; });
+  mmUpdate({ phase: 'round', rid: (mm.rid || 0) + 1, endsAt: now + ROUND_SEC * 1000, roles: roles, alive: alive, holder: sh, gun: null, result: null });
+}
+function endRound(text) {
+  mmUpdate({ phase: 'lobby', endsAt: srvNow() + INTERMISSION_SEC * 1000, roles: null, alive: null, holder: null, gun: null, result: { id: (mm.rid || 0) + '_' + Date.now(), text: text, at: firebase.database.ServerValue.TIMESTAMP } });
+}
+function hostTick() {
+  if (!isHost()) return;
+  var now = srvNow(), live = liveSlots();
+  if (!mm.phase) { mmUpdate({ phase: 'lobby', endsAt: null, rid: 0 }); return; }
+  if (mm.phase === 'lobby') {
+    if (live.length < MIN_PLAYERS) { if (mm.endsAt) mmUpdate({ endsAt: null }); return; }
+    if (!mm.endsAt) { mmUpdate({ endsAt: now + INTERMISSION_SEC * 1000 }); return; }
+    if (now >= mm.endsAt) startRound(live, now);
+    return;
+  }
+  if (ending) return;
+  var roles = mm.roles || {}, alive = copy(mm.alive), up = {}, changed = false;
+  Object.keys(roles).forEach(function(k) {
+    var i = +k.slice(1);
+    if (alive[k] === true && live.indexOf(i) < 0) {                  /* a player left mid-round */
+      alive[k] = false; changed = true;
+      if (mm.holder === i) { var q = lastPos[i] || { x: 0, y: 0, z: 0 }; up.gun = { x: q.x, y: q.y + 1, z: q.z }; up.holder = null; }
+    }
+  });
+  var text = judge(alive, now);
+  if (text) { endRound(text); return; }
+  if (changed) { up.alive = alive; mmUpdate(up); }
+}
+function finish(up, text) { ending = true; mmUpdate(up); setTimeout(function() { endRound(text); ending = false; }, 1800); }   /* let everyone see the last death first */
+function hostEvent(sn) {
+  var e = sn.val(); if (!e || !isHost()) return;
+  DB.ref('game/mmev/' + sn.key).remove();
+  if (srvNow() - (e.at || 0) > 6000 || mm.phase !== 'round' || e.rid !== mm.rid || ending) return;
+  var roles = mm.roles || {}, alive = copy(mm.alive), by = rk(e.by), tg = rk(e.target), up = {}, text = null;
+  function dropGun(i) { var q = lastPos[i] || { x: 0, y: 0, z: 0 }; up.gun = { x: q.x, y: q.y + 1, z: q.z }; up.holder = null; }
+  if (e.t === 'pickup') {
+    if (alive[by] !== true || roles[by] === 'murderer' || !mm.gun) return;
+    mmUpdate({ holder: e.by, gun: null }); return;
+  }
+  if (e.t === 'die') {
+    if (alive[by] !== true) return; alive[by] = false;
+    if (mm.holder === e.by) dropGun(e.by);
+  } else if (e.t === 'kill') {
+    if (alive[by] !== true || alive[tg] !== true || e.by === e.target) return;
+    if (e.w === 'gun') {
+      if (mm.holder !== e.by) return;
+      alive[tg] = false;
+      if (roles[tg] === 'murderer') text = roles[by] === 'sheriff' ? 'De Sheriff SAVED US!!' : 'De HERO SAVED US!!!';
+      else { alive[by] = false; dropGun(e.by); }                   /* shot the wrong person: shooter dies too and drops the gun */
+    } else {
+      if (roles[by] !== 'murderer') return;
+      if (e.w === 'knife') { var a = lastPos[e.by] || { x: 0, z: 0 }, b = lastPos[e.target] || { x: 0, z: 0 }; if (Math.hypot(a.x - b.x, a.z - b.z) > 9) return; }
+      alive[tg] = false;
+      if (mm.holder === e.target) dropGun(e.target);
+    }
+  } else return;
+  up.alive = alive;
+  if (!text) text = judge(alive, srvNow());
+  if (text) finish(up, text); else mmUpdate(up);
+}
+function cleanupEvents() {
+  if (!isHost()) return;
+  ['game/mmev', 'game/mmfx'].forEach(function(pth) {
+    DB.ref(pth).once('value').then(function(sn) { var v = sn.val() || {}; Object.keys(v).forEach(function(k) { if (srvNow() - (v[k].at || 0) > 15000) DB.ref(pth + '/' + k).remove(); }); });
+  });
+}
+function startMM() {
+  DB.ref('game/mm').on('value', function(sn) { onMM(sn.val() || {}); });
+  DB.ref('game/mmev').limitToLast(30).on('child_added', hostEvent);
+  DB.ref('game/mmfx').limitToLast(30).on('child_added', onFx);
+  setInterval(hostTick, 300); setInterval(cleanupEvents, 15000);
+}
+
+/* ---------- every player: reacting to the game state ---------- */
+function onMM(cur) {
+  var prev = mm; mm = cur;
+  var rid = mm.rid || 0, was = prev.phase === 'round', is = mm.phase === 'round';
+  if (is && (!was || prev.rid !== rid) && myRole()) roundStarted();
+  if (was && !is) roundEnded();
+  if (is && was && prev.rid === rid && prev.alive && prev.alive[rk(slot)] === true && mm.alive && mm.alive[rk(slot)] === false) iDied();
+  if (mm.result && (!prev.result || prev.result.id !== mm.result.id) && srvNow() - (mm.result.at || 0) < 8000) showResult(mm.result.text);
+  refreshTool(); updateOrb();
+}
+function roundStarted() {
+  inRoundFlag = true; spec.on = false;
+  teleport(tpBlocks.length ? tpBlocks[Math.floor(Math.random() * tpBlocks.length)] : (lobbySpawn || spawn), 2.5);   /* a random TeleportBlock */
+  tool.equipped = true; tool.atkAt = 0; tool.throwUntil = 0; tool.gunUntil = 0;
+  roleReveal(myRole());
+}
+function roundEnded() {
+  roleToken++; el('roleBox').style.display = 'none'; spec.on = false;
+  if (inRoundFlag) respawn();                                        /* everyone goes back to the lobby */
+  inRoundFlag = false; refreshTool();
+}
+function iDied() {
+  if (Date.now() - lastDeath < 1500) return; lastDeath = Date.now();
+  roleToken++; el('roleBox').style.display = 'none';
+  blackout(2000); respawn();                                         /* black screen for 2 seconds, you wake up in the lobby */
+}
+function blackout(ms) { el('blackout').className = 'on'; clearTimeout(boTimer); boTimer = setTimeout(function() { el('blackout').className = ''; }, ms); }
+function showResult(text) { var b = el('resultBox'); b.textContent = text; b.style.display = 'block'; clearTimeout(resTimer); resTimer = setTimeout(function() { b.style.display = 'none'; }, 4500); }
+function roleReveal(role) {                                          /* "Role:" flickers through the roles, slows down, then lands on yours */
+  var box = el('roleBox'), tok = ++roleToken, fin = role === 'murderer' ? 'Murderer' : role === 'sheriff' ? 'Sheriff' : 'Innocent';
+  var col = { Murderer: '#ff4444', Sheriff: '#4aa8ff', Innocent: '#3ddc84' }, words = ['Innocent', 'Sheriff', 'Murderer'], t0 = performance.now(), last = '';
+  box.style.display = 'block';
+  (function tick() {
+    if (tok !== roleToken) return;
+    var t = performance.now() - t0;
+    if (t < 2300) { var w; do { w = words[Math.floor(Math.random() * 3)]; } while (w === last); last = w; box.innerHTML = 'Role: <span>' + w + '</span>'; setTimeout(tick, 60 + t * 0.1); }
+    else if (t < 4200) { box.innerHTML = 'Role: <span style="color:' + col[fin] + '">' + fin + '</span>'; setTimeout(tick, 200); }
+    else box.style.display = 'none';
+  })();
+}
+
+/* ---------- tools: knife (murderer) and gun (sheriff / whoever picks it up) ---------- */
+function toolType() { if (!amAlive()) return null; if (myRole() === 'murderer') return 'knife'; return mm.holder === slot ? 'gun' : null; }
+function curHeld() { if (!tool.type || !tool.equipped) return null; if (tool.type === 'knife' && performance.now() < tool.throwUntil) return null; return tool.type; }
+function setTool(p, t) { p.tool = t; p.knifeM.visible = t === 'knife'; p.gunM.visible = t === 'gun'; }
+function applyHand() { var h = curHeld(); if (me && me.tool !== h) setTool(me, h); }
+function refreshTool() {
+  var t = toolType();
+  if (t !== tool.type) {
+    tool.type = t; tool.equipped = true; tool.throwUntil = 0; tool.gunUntil = 0;
+    var ic = el('ticon'), lb = el('tlabel');
+    if (t) { ic.style.display = 'block'; lb.textContent = ''; ic.onerror = function() { ic.style.display = 'none'; lb.textContent = t === 'knife' ? 'KNIFE' : 'GUN'; }; ic.src = (t === 'knife' ? 'knifeicon.png' : 'gunicon.png') + '?v=1'; }
+  }
+  applyHand();
+}
+function toggleEquip() { if (!tool.type || spec.on) return; tool.equipped = !tool.equipped; applyHand(); }
+function lookDir() { return { x: -Math.sin(yaw) * Math.cos(pitch), y: -Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) }; }
+function swing() { me.atk = 0.3; myAc++; }
+function nearestTarget(reach) {                                      /* someone you are basically touching, in front of you */
+  var best = null, bd = 1e9;
+  targets().forEach(function(i) {
+    var g = remotes[i].g.position, dx = g.x - pos.x, dz = g.z - pos.z, d = Math.hypot(dx, dz);
+    if (d > reach || Math.abs(g.y - pos.y) > 3.5) return;
+    var ang = Math.atan2(dx, dz) - rot; ang = Math.abs(Math.atan2(Math.sin(ang), Math.cos(ang)));
+    if (ang > 1.9 && d > 1.2) return;
+    if (d < bd) { bd = d; best = i; }
+  });
+  return best;
+}
+function doAction() {
+  if (!playing || menuOpen || typing || spec.on) return;
+  var held = curHeld(); if (!held) return;
+  var now = performance.now();
+  if (held === 'knife') {
+    if (now - tool.atkAt < STAB_CD) return; tool.atkAt = now; swing();
+    var t = nearestTarget(STAB_REACH); if (t !== null) sendEv({ t: 'kill', target: t, w: 'knife' });
+  } else {
+    if (now < tool.gunUntil) return; tool.gunUntil = now + GUN_CD; swing(); shoot();
+  }
+}
+function wallDist(o, d, far) { var t = far; for (var i = 0; i < colliders.length; i++) { var h = rayBox(colliders[i], o[0], o[1], o[2], d.x, d.y, d.z); if (h < t) t = h; } return t; }
+function segDist(p1, q1, p2, q2) {                                    /* closest distance between two segments; s = how far along the first one */
+  function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; } function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function cl(v) { return Math.max(0, Math.min(1, v)); }
+  var d1 = sub(q1, p1), d2 = sub(q2, p2), r = sub(p1, p2), a = dot(d1, d1), e = dot(d2, d2), f = dot(d2, r), s, t;
+  if (a <= 1e-9 && e <= 1e-9) return { d2: dot(r, r), s: 0 };
+  if (a <= 1e-9) { s = 0; t = cl(f / e); }
+  else {
+    var c = dot(d1, r);
+    if (e <= 1e-9) { t = 0; s = cl(-c / a); }
+    else {
+      var b = dot(d1, d2), den = a * e - b * b; s = den > 1e-9 ? cl((b * f - c * e) / den) : 0; t = (b * s + f) / e;
+      if (t < 0) { t = 0; s = cl(-c / a); } else if (t > 1) { t = 1; s = cl((b - c) / a); }
+    }
+  }
+  var c1 = [p1[0] + d1[0] * s, p1[1] + d1[1] * s, p1[2] + d1[2] * s], c2 = [p2[0] + d2[0] * t, p2[1] + d2[1] * t, p2[2] + d2[2] * t], dd = sub(c1, c2);
+  return { d2: dot(dd, dd), s: s };
+}
+function tracer(a, b) {
+  var len = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); if (len < 0.1) return;
+  var m = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1), new THREE.MeshBasicMaterial({ color: lin(0xffe14d) }));
+  m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); m.lookAt(b[0], b[1], b[2]); m.scale.z = len; scene.add(m); tracers.push({ m: m, until: performance.now() + 140 });
+}
+function shoot() {                                                   /* the bullet goes where the crosshair (screen centre) points */
+  var o = [cam.position.x, cam.position.y, cam.position.z], d = lookDir(), tw = wallDist(o, d, 140), best = null, bt = tw;
+  var far = [o[0] + d.x * tw, o[1] + d.y * tw, o[2] + d.z * tw];
+  targets().forEach(function(i) {
+    var g = remotes[i].g.position, r = segDist(o, far, [g.x, g.y + 0.3, g.z], [g.x, g.y + 5, g.z]);
+    if (r.d2 <= 1.5 * 1.5 && r.s * tw < bt) { bt = r.s * tw; best = i; }
+  });
+  var end = [o[0] + d.x * bt, o[1] + d.y * bt, o[2] + d.z * bt], from = [pos.x, pos.y + 3.4, pos.z];
+  tracer(from, end); sendFx({ t: 'shot', x: from[0], y: from[1], z: from[2], tx: end[0], ty: end[1], tz: end[2] });
+  if (best !== null) sendEv({ t: 'kill', target: best, w: 'gun' });
+}
+function makeKnifeMesh() {                                           /* built along the arm: the blade points the way the arm points */
+  var g = new THREE.Group(), metal = new THREE.MeshStandardMaterial({ color: lin(0xd6dbe0), roughness: 0.3, metalness: 0.7 }), dark = new THREE.MeshStandardMaterial({ color: lin(0x2b2b2b), roughness: 0.8, metalness: 0 });
+  function part(w, h, d, m, x, y, z) { var o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); }
+  part(0.2, 0.7, 0.2, dark, 0, -2.0, 0); part(0.6, 0.12, 0.3, dark, 0, -2.4, 0); part(0.1, 1.5, 0.34, metal, 0, -3.2, 0);
+  return g;
+}
+function makeGunMesh() {
+  var g = new THREE.Group(), dark = new THREE.MeshStandardMaterial({ color: lin(0x2e2e33), roughness: 0.5, metalness: 0.4 }), acc = new THREE.MeshStandardMaterial({ color: lin(0xff6a00), roughness: 0.6, metalness: 0 });
+  function part(w, h, d, m, x, y, z) { var o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); }
+  part(0.3, 0.9, 0.34, dark, 0, -2.3, 0); part(0.2, 0.9, 0.2, dark, 0, -3.1, 0.04); part(0.24, 0.3, 0.5, acc, 0, -2.0, -0.3);
+  return g;
+}
+function spawnKnife(o, d, mine) {
+  var k = makeKnifeMesh(); k.position.y = 3.0;
+  var kk = new THREE.Group(); kk.add(k); kk.position.set(o.x, o.y, o.z);
+  kk.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(d.x, d.y, d.z)); scene.add(kk);
+  projectiles.push({ m: kk, k: k, p: [o.x, o.y, o.z], d: [d.x, d.y, d.z], life: 0, mine: mine });
+}
+function doThrow() {
+  if (!playing || menuOpen || typing || spec.on || !(tool.type === 'knife' && tool.equipped) || performance.now() < tool.throwUntil) return;
+  tool.throwUntil = performance.now() + THROW_CD; swing();           /* the knife leaves your hand and you cannot use it for 3 seconds */
+  var cd = lookDir(), co = [cam.position.x, cam.position.y, cam.position.z], tw = Math.min(70, wallDist(co, cd, 70));
+  var o = { x: pos.x, y: pos.y + 3.4, z: pos.z }, aim = [co[0] + cd.x * tw, co[1] + cd.y * tw, co[2] + cd.z * tw];
+  var dx = aim[0] - o.x, dy = aim[1] - o.y, dz = aim[2] - o.z, L = Math.hypot(dx, dy, dz) || 1, d = { x: dx / L, y: dy / L, z: dz / L };
+  o.x += d.x * 1.5; o.y += d.y * 1.5; o.z += d.z * 1.5;
+  spawnKnife(o, d, true); sendFx({ t: 'throw', x: o.x, y: o.y, z: o.z, dx: d.x, dy: d.y, dz: d.z });
+}
+function onFx(sn) {
+  var e = sn.val(); if (!e || e.by === slot || srvNow() - (e.at || 0) > 3000) return;
+  if (e.t === 'throw') spawnKnife({ x: e.x, y: e.y, z: e.z }, { x: e.dx, y: e.dy, z: e.dz }, false);
+  else if (e.t === 'shot') tracer([e.x, e.y, e.z], [e.tx, e.ty, e.tz]);
+}
+function stepProjectiles(dt) {
+  for (var k = projectiles.length - 1; k >= 0; k--) {
+    var q = projectiles[k], step = 70 * dt, a = q.p, b = [a[0] + q.d[0] * step, a[1] + q.d[1] * step, a[2] + q.d[2] * step], dead = false;
+    for (var i = 0; i < colliders.length && !dead; i++) if (rayBox(colliders[i], a[0], a[1], a[2], q.d[0], q.d[1], q.d[2]) <= step) dead = true;   /* walls stop it */
+    if (q.mine && !dead) {
+      var hit = null;
+      targets().forEach(function(t) { var g = remotes[t].g.position; if (segDist(a, b, [g.x, g.y + 0.3, g.z], [g.x, g.y + 5, g.z]).d2 <= 1.4 * 1.4) hit = t; });
+      if (hit !== null) { sendEv({ t: 'kill', target: hit, w: 'throw' }); dead = true; }
+    }
+    q.p = b; q.m.position.set(b[0], b[1], b[2]); q.k.rotation.y += dt * 25; q.life += step;
+    if (q.life > 90) dead = true;
+    if (dead) { scene.remove(q.m); projectiles.splice(k, 1); }
+  }
+}
+
+/* ---------- dropped gun: hovers with a green orb until a non-murderer walks into it ---------- */
+function updateOrb() {
+  if (mm.phase === 'round' && mm.gun) {
+    if (!orb) {
+      orb = new THREE.Group(); var gm = new THREE.Group(), gg = makeGunMesh(); gg.rotation.x = Math.PI / 2; gg.position.y = 2.6; gm.add(gg); orb.add(gm);
+      orb.add(new THREE.Mesh(new THREE.SphereGeometry(1.7, 20, 14), new THREE.MeshBasicMaterial({ color: lin(0x3ddc84), transparent: true, opacity: 0.32, depthWrite: false })));
+      orb.userData.gm = gm; scene.add(orb);
+    }
+    orb.userData.base = mm.gun.y + 1.5; orb.position.set(mm.gun.x, orb.userData.base, mm.gun.z);
+  } else if (orb) { scene.remove(orb); orb = null; }
+}
+function mmFrame(dt) {
+  applyHand(); stepProjectiles(dt);
+  var now = performance.now();
+  for (var i = tracers.length - 1; i >= 0; i--) if (now > tracers[i].until) { scene.remove(tracers[i].m); tracers.splice(i, 1); }
+  if (orb) {
+    orb.position.y = orb.userData.base + Math.sin(now / 500) * 0.3; orb.userData.gm.rotation.y = now / 700;
+    if (amAlive() && myRole() !== 'murderer' && mm.holder !== slot && mm.gun && Math.hypot(pos.x - mm.gun.x, pos.z - mm.gun.z) < 3 && Math.abs(pos.y + 2 - mm.gun.y) < 4 && now - pickupAt > 1000) { pickupAt = now; sendEv({ t: 'pickup' }); }
+  }
+}
+
+/* ---------- spectate (only for people in the lobby, only during a round) ---------- */
+function specTarget() { var t = targets(); return t.length ? t[((spec.i % t.length) + t.length) % t.length] : null; }
+el('specbtn').onclick = function() { if (targets().length) { spec.on = true; spec.i = 0; } };
+el('sprev').onclick = function() { spec.i--; }; el('snext').onclick = function() { spec.i++; }; el('sstop').onclick = function() { spec.on = false; };
+
+/* ---------- on-screen text ---------- */
+function mmText() {
+  if (mm.phase === 'round') { var s = Math.max(0, Math.ceil(((mm.endsAt || 0) - srvNow()) / 1000)); return 'Ongoing Round: ' + Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  if (!dbOK || !mm.endsAt || liveSlots().length < MIN_PLAYERS) return 'Waiting for players (need ' + MIN_PLAYERS + ')';
+  return 'Next round: ' + Math.max(0, Math.ceil((mm.endsAt - srvNow()) / 1000)) + ' sec';
+}
+function mmUI() {
+  var top = el('mmtop'); top.style.display = playing ? 'block' : 'none'; if (!playing) return;
+  top.textContent = mmText();
+  var t = tool.type, now = performance.now(), held = curHeld();
+  el('toolbar').style.display = t ? 'flex' : 'none';
+  if (t) {
+    el('tslot').className = tool.equipped ? 'on' : '';
+    var cd = (t === 'knife' ? tool.throwUntil : tool.gunUntil) - now, c = el('tcd');
+    if (cd > 0) { c.style.display = 'flex'; c.textContent = Math.ceil(cd / 1000); } else c.style.display = 'none';
+    var h = el('thint'); h.style.display = held === 'knife' ? 'block' : 'none'; h.textContent = touchOn ? 'Tap THROW to throw' : 'T to throw';   /* shown while you hold the knife */
+  }
+  el('xhair').style.display = held === 'gun' ? 'block' : 'none';
+  document.body.classList.toggle('armed', !!held); document.body.classList.toggle('knife', held === 'knife');
+  el('abtn').textContent = held === 'gun' ? 'SHOOT' : 'STAB';
+  el('specbtn').style.display = (mm.phase === 'round' && !amAlive() && !spec.on && targets().length > 0) ? 'block' : 'none';
+  el('specbar').style.display = spec.on ? 'flex' : 'none';
+  if (spec.on) { var st = specTarget(); el('spname').textContent = st !== null && remotes[st] ? remotes[st].name : '...'; }
+}
+setInterval(mmUI, 150);
+el('tslot').onclick = toggleEquip;
+el('abtn').addEventListener('pointerdown', function(e) { e.preventDefault(); doAction(); });
+el('tbtn').addEventListener('pointerdown', function(e) { e.preventDefault(); doThrow(); });
+
 /* ---------- join + main loop ---------- */
 function join() {
   var n = document.getElementById('nm').value.trim().replace(/\s+/g, ' ').slice(0, 16);
@@ -688,7 +1071,7 @@ var last = performance.now();
 (function loop(t) {
   requestAnimationFrame(loop);
   var dt = Math.min(0.05, (t - last) / 1000); last = t;
-  if (me) { stepMe(dt); stepRemotes(dt); }
+  if (me) { stepMe(dt); stepRemotes(dt); mmFrame(dt); }
   stepCam(dt); if (++lf % 8 === 0) updateLights(); fadeLights(dt); updateBubbles(); ren.render(scene, cam);
 })(last);
 </script>
