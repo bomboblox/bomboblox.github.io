@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Murder Mystery - Bomboblox</title>
+<link rel="icon" type="image/png" href="bomboblox.png">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+#gamepage{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+#gamepage h1{font-size:34px;font-weight:900;line-height:1.1;overflow-wrap:anywhere}
+#gamepage .back{font-size:14px;color:#999;text-decoration:none}#gamepage .back:hover{color:#ff6a00}
+#thumb{width:100%;aspect-ratio:16/9;background:#1e1e1e;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#666;font-size:18px}
+#thumb img{width:100%;height:100%;object-fit:cover;display:block}
+#play{display:flex;align-items:center;justify-content:center;height:56px;background:#ff6a00;color:#111;font-size:24px;font-weight:900;letter-spacing:.5px;text-decoration:none;transition:background .15s,transform .1s}
+#play:hover{background:#e05a00}#play:active{transform:scale(.99)}
+</style>
+</head>
+<body>
+<div id="topbar"><a href="index.html" id="logo"></a><div id="auth-area"><a href="login.html" class="auth-btn">Log de In</a><a href="signup.html" class="auth-btn">Sign de Up</a></div></div>
+<main>
+  <div id="gamepage">
+    <a class="back" href="index.html">&larr; Back home</a>
+    <h1>Murder Mystery</h1>
+    <div id="thumb"><img src="mm2.png" alt="Murder Mystery" onerror="this.replaceWith(document.createTextNode('mm2.png not found'))"></div>
+    <a id="play" href="https://bomboblox.github.io/game.html">Play</a>
+  </div>
+</main>
+<footer>Bomboblox is a fan-made platform and is not affiliated with Roblox. (v3)</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="bb.js?v=3"></script>
+<script>
+  auth.onAuthStateChanged(function(user) { if (user) bbNav(user); });
+</script>
+</body>
+</html>
